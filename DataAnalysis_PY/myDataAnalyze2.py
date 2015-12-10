@@ -2,12 +2,8 @@
 #!/usr/bin/python
 #Data analysis
 import sys
-import time
 import os
-import subprocess
 from myGnu2DCartesian import myGnu2DCartesian,myGnu2DCartesianMakeEmpty
-from subprocess import call
-from collections import namedtuple
 import datetime
 
 
@@ -30,26 +26,14 @@ else:
   myGnuTargetFilename='myPlotGP_CMD.gnu'
   myGnuFile = open(myGnuTargetFilename, 'w')
   print "DataAnalyze2 - output is "+str(myGnuTargetFilename)+". Launch gnuplot after!"
-  #if str(sys.argv[2])=='x11':	
-    #print "x11 output"
-    #proc = subprocess.Popen(['gnuplot','-p'], 
-			  #shell=True,
-			  #stdin=subprocess.PIPE,
-			  #)
-    #proc.stdin.write('set terminal x11 size 1080,720\n')
-  #el
-  if str(sys.argv[2])=='png':	
+  if str(sys.argv[2])=='png':
     print "png output"
     #check if dat folder exists in program path
     if os.path.exists("png"):
       os.popen('rm -rf png')
     os.popen('mkdir png')
-    #proc = subprocess.Popen(['gnuplot','-p'], 
-			  #shell=True,
-			  #stdin=subprocess.PIPE,
-			  #)
     mySend2GnuPlot('set terminal png size 600,800\n')
-  elif str(sys.argv[2])=='gif':	
+  elif str(sys.argv[2])=='gif':
     print "gif output"
     mySend2GnuPlot('set terminal gif size 1200,800 animate delay 10\n')
     #proc.stdin.write('set terminal gif size 1080,720 animate delay 100\n')
@@ -57,9 +41,6 @@ else:
   else:
     print "No output specified, please choose x11 or png"
     sys.exit()
-
-
-
   print "Finding "+sys.argv[1]+".."
   if os.path.isfile(sys.argv[1]):
     print "Opening "+sys.argv[1]+".."
@@ -77,7 +58,7 @@ else:
       for line in lines:
 	data=line.split()
 	if str(data[0])=="#":
-	  #special control information, do not parse normally
+    #special control information, do not parse normally
 	  if str(data[1])=="topic":
 	    #general topic information, descriptor not needed
 	    myTopicsNames.append(data[2])
@@ -93,14 +74,14 @@ else:
 	    if len(myPointsContainer)>0:
 	      myPoints[myTarget].append(myPointsContainer[:])
 	    #sum is an agregate of data which follows, switch target topic entry
-	    try: myTarget=myTopicsNames.index(data[2]); 
+	    try: myTarget=myTopicsNames.index(data[2]);
 	    except ValueError: print "Topic "+str(data[2])+" not defined in topic statement"
 	    #print "Found sum of topic "+str(data[2])+", putting data to index "+str(myTarget)
 	    myPointsContainer=[]
 	    myPointsContainer.append(data[5])#initialise point container
 	    try: myDistinctDates.index(data[5]);
 	    except ValueError: myDistinctDates.append(data[5])
-	else:  
+	else:
 	  #on main data structure, myTarget is set
 	  myPointsContainer.append(data[0])#angle
 	  myPointsContainer.append(data[1])#range
@@ -109,9 +90,9 @@ else:
     for i in range(0,len(myTopicsNames)):
       print "Topic "+str(myTopicsNames[i])+" has "+str(len(myPoints[i]))+" elements(incl date as point)"
     print "Total "+str(len(myDistinctDates))+" independent instances of seconds"
-    #sort dates just in case 
+    #sort dates just in case
     myDistinctDates.sort()
-    
+
     #Preamble
     myMaxRange=2.5
     mySend2GnuPlot('myCartesianXStart='+str(myMaxRange)+'\n')
@@ -122,7 +103,7 @@ else:
     mySend2GnuPlot('set yzeroaxis\n')
     mySend2GnuPlot('set rmargin 1\n')
     mySend2GnuPlot('set lmargin 3\n')
-    mySend2GnuPlot('set tmargin 2\n') 
+    mySend2GnuPlot('set tmargin 2\n')
     mySend2GnuPlot('set bmargin 2\n')
     mySend2GnuPlot('set xrange [-myCartesianXStart:myCartesianXEnd]\n')
     mySend2GnuPlot('set yrange [-myCartesianYStart:myCartesianYEnd]\n')
@@ -151,10 +132,10 @@ else:
 	for i in range(0,len(myTopicsNames)):
 	  print myTopicsNames[i]+" "+str(len(myLocalLL[i]))+" hits."
 	#Gnuplot code creation: myLocalLL contains lists of myPoint, generate image code in gnuplot
-	
+
 	#Start on step 0
 	myFoundAnyPointImage=False
-	
+
 	for i in range(0,len(myTopicsNames)):
 	  myFoundAnyPointImage=myFoundAnyPointImage or len(myLocalLL[i])>0
 	myStartStep=0
@@ -206,9 +187,9 @@ else:
 	    #mySend2GnuPlot('plot ')
 	    myGnuPlotOutput+=myAgregateGnuCmds
 	    myGnuPlotOutput.append('\n')
-	    
+
 	    #get a plot command for all the points
-	    
+
 	    for i in range(0,len(myGnuPlotOutput)):
 	      mySend2GnuPlot(myGnuPlotOutput[i])
 	    mySend2GnuPlot('unset multiplot\n')
@@ -218,28 +199,28 @@ else:
   else:
     print "Input file not found!"
   myGnuFile.close()
-      
-	    
 
-	  
-      
-     
-      
+
+
+
+
+
+
       #mySend2GnuPlot("set multiplot layout 3,1")
       #for i in range(0,len(myTopicsNames)):
 	##print myTopicsNames[i]+" "+str(len(myLocalLL[i]))+" hits."
 	#for j in range(0,len(myLocalLL[i])):
 	  #if not myFirstData2DDone[i]:
-	    
+
 	    #myGnuPlotOutput=myGnu2DCartesian(myLocalLL[i][j],myTopicsNames[i])
-	    
+
 	    #for myCmd in myGnuPlotOutput:
 	      #mySend2GnuPlot(myCmd)
 	    #myFirstData2DDone[i]=True
-      
 
-	
-  
+
+
+
 	    #mySums.append(float(data[1]))
 	    #myDates.append(float(data[2]))
 	#del myGnuPlotCmds[:]
@@ -250,7 +231,7 @@ else:
 	#else:
 	  #myBinResolution=len(mySums)/10
 	#myGnuPlotCmds=myHistogram(mySums,myBinResolution,myDateTimeStart,myDateTimeEnd,myTopicName)
-	#if sys.argv[2]=='x11':		
+	#if sys.argv[2]=='x11':
 	  #print 'data #'+str(myFileOutput)
 	  #for cmd in myGnuPlotCmds:
 	    ##sys.stdout.write(cmd)
@@ -265,7 +246,7 @@ else:
 	  #f.write('quit\n')
 	  #f.close()
 	  #call(["gnuplot", "myGnuPlot.txt"])
-	#elif sys.argv[2]=='gif':		
+	#elif sys.argv[2]=='gif':
 	  #print 'frame #'+str(myFileOutput)
 	  #for cmd in myGnuPlotCmds:
 	    ##sys.stdout.write(cmd)
@@ -276,4 +257,4 @@ else:
       #print "Writing to gif file.."
       #proc.stdin.write('set output\n')
       #proc.stdin.write('quit\n')
-    #break 
+    #break
