@@ -8,8 +8,9 @@ import datetime
 
 
 myStopAfter=False
-myStartOffset=20
+myStartOffset=0
 myStopAfterSeconds=5
+myBackGroundSampleIndex=1#target date to extract background features
 
 def mySend2GnuPlot(vCmd):
   #print vCmd
@@ -32,7 +33,7 @@ else:
     if os.path.exists("png"):
       os.popen('rm -rf png')
     os.popen('mkdir png')
-    mySend2GnuPlot('set terminal png size 600,800\n')
+    mySend2GnuPlot('set terminal png size 1200,800\n')
   elif str(sys.argv[2])=='gif':
     print "gif output"
     mySend2GnuPlot('set terminal gif size 1200,800 animate delay 10\n')
@@ -52,6 +53,7 @@ else:
       myPoints=[]
       myPointsContainer=[]
       myFirstData2DDone=[]
+      myBackGroundLL=[]
       myMaxRange=0
       #myTopicName="N_A"
       print "Contains "+str(len(lines))+" lines"
@@ -92,7 +94,19 @@ else:
     print "Total "+str(len(myDistinctDates))+" independent instances of seconds"
     #sort dates just in case
     myDistinctDates.sort()
-
+    
+    #obtain background sample
+    myBackGroundDate=myDistinctDates[myBackGroundSampleIndex];
+    print "Background date:"+myBackGroundDate
+    myBackgroundContainer=[]
+    for i in range(0,len(myTopicsNames)):
+      myLocalPointContainer=[]
+      for myPoint in myPoints[i]:
+	if myBackGroundDate==myPoint[0]:#match the current dates
+	  myLocalPointContainer.append(myPoint)
+      myBackgroundContainer.append(myLocalPointContainer[0])
+      print "Topic "+myTopicsNames[i]+"has "+str(len(myBackgroundContainer[i]))+" ranges(angle+distance) +1 date in background sample"
+	  
     #Preamble
     myMaxRange=2.5
     mySend2GnuPlot('myCartesianXStart='+str(myMaxRange)+'\n')
@@ -144,6 +158,7 @@ else:
 	  #print "Sequence "+str(myStartStep)
 	  myFoundAnyPointImage=False
 	  myGnuPlotOutput=[]
+	  myGnuPlotOutput2=[]
 	  #first determine if there is still any image on current level
 	  for i in range(0,len(myTopicsNames)):
 	    if len(myLocalLL[i])>=myStartStep+1:
@@ -163,15 +178,17 @@ else:
 	      #print str(len(myLocalLL[i]))+">="+str(myStartStep)
 	      myQualifiedTopicName=myTopicsNames[i]+"_"+str(myDate)+"_"+str(myStartStep)
 	      myLocalGnuCmds=[]
+	      myLocalGnuCmds2=[]
 	      if (i==1):
 		myDateTimeObj=datetime.datetime.fromtimestamp(float(myDate))
 		myLocalGnuCmds.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 	      else:
 		myLocalGnuCmds.append('set title "a"\n')
 	      if len(myLocalLL[i])>=myStartStep+1:
-		myResult=myGnu2DCartesian(myLocalLL[i][myStartStep],myQualifiedTopicName,myDate,myTopicsPose[i])
+		myResult=myGnu2DCartesian(myLocalLL[i][myStartStep],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i])
 		myLocalGnuCmds.append(myResult[0])
 		myAgregateGnuCmds.append(myResult[1])
+		myLocalGnuCmds2.append(myResult[2])
 		myFoundAnyPointImage=True
 		#print len(myGnuPlotOutput)
 	      else:
@@ -179,19 +196,25 @@ else:
 		myResult=myGnu2DCartesianMakeEmpty(myQualifiedTopicName)
 		myLocalGnuCmds.append(myResult[0])
 		myAgregateGnuCmds.append(myResult[1])
+		#use same single empty data in case there is no points
+		myLocalGnuCmds2.append(myResult[0])
 		myAgregateGnuCmds.append(',')
 		#myAgregatePointList+=myGnu2DCartesianMakeEmpty("/LMS_agregated")
 	      #get a command list for combined graph
 	      #myAgregateGnuCmds+=myGnu2DCartesian(myAgregatePointList,"/LMS_agregated",myDate)
 	      myGnuPlotOutput+=myLocalGnuCmds
+	      myGnuPlotOutput2+=myLocalGnuCmds2
 	    #mySend2GnuPlot('plot ')
-	    myGnuPlotOutput+=myAgregateGnuCmds
-	    myGnuPlotOutput.append('\n')
+	    #Use below for aggregate points
+	    #myGnuPlotOutput+=myAgregateGnuCmds
+	    #myGnuPlotOutput.append('\n')
 
 	    #get a plot command for all the points
 
 	    for i in range(0,len(myGnuPlotOutput)):
 	      mySend2GnuPlot(myGnuPlotOutput[i])
+	    for i in range(0,len(myGnuPlotOutput2)):
+	      mySend2GnuPlot(myGnuPlotOutput2[i])
 	    mySend2GnuPlot('unset multiplot\n')
 	    if str(sys.argv[2])=='png':
 	      mySend2GnuPlot('set output\n')
@@ -200,61 +223,3 @@ else:
     print "Input file not found!"
   myGnuFile.close()
 
-
-
-
-
-
-
-      #mySend2GnuPlot("set multiplot layout 3,1")
-      #for i in range(0,len(myTopicsNames)):
-	##print myTopicsNames[i]+" "+str(len(myLocalLL[i]))+" hits."
-	#for j in range(0,len(myLocalLL[i])):
-	  #if not myFirstData2DDone[i]:
-
-	    #myGnuPlotOutput=myGnu2DCartesian(myLocalLL[i][j],myTopicsNames[i])
-
-	    #for myCmd in myGnuPlotOutput:
-	      #mySend2GnuPlot(myCmd)
-	    #myFirstData2DDone[i]=True
-
-
-
-
-	    #mySums.append(float(data[1]))
-	    #myDates.append(float(data[2]))
-	#del myGnuPlotCmds[:]
-	#myDateTimeStart=myDates[0]
-	#myDateTimeEnd=myDates[-1]
-	#if len(mySums)<=150:
-	  #myBinResolution=len(mySums)/2
-	#else:
-	  #myBinResolution=len(mySums)/10
-	#myGnuPlotCmds=myHistogram(mySums,myBinResolution,myDateTimeStart,myDateTimeEnd,myTopicName)
-	#if sys.argv[2]=='x11':
-	  #print 'data #'+str(myFileOutput)
-	  #for cmd in myGnuPlotCmds:
-	    ##sys.stdout.write(cmd)
-	    #proc.stdin.write(cmd)
-	#elif sys.argv[2]=='png':
-	  #print 'set output \'file'+str(myFileOutput)+'.png\''
-	  #f = open('myGnuPlot.txt', 'w')
-	  #f.write('set terminal png size 1080,720\n')
-	  #f.write('set output \'file'+str(myFileOutput)+'.png\'\n')
-	  #for cmd in myGnuPlotCmds:
-	    #f.write(cmd)
-	  #f.write('quit\n')
-	  #f.close()
-	  #call(["gnuplot", "myGnuPlot.txt"])
-	#elif sys.argv[2]=='gif':
-	  #print 'frame #'+str(myFileOutput)
-	  #for cmd in myGnuPlotCmds:
-	    ##sys.stdout.write(cmd)
-	    #proc.stdin.write(cmd)
-    #time.sleep(1)
-  #except KeyboardInterrupt:
-    #if sys.argv[2]=='gif':
-      #print "Writing to gif file.."
-      #proc.stdin.write('set output\n')
-      #proc.stdin.write('quit\n')
-    #break

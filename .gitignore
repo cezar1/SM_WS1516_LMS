@@ -5,3 +5,5 @@ DataAnalysis_PY/png/*
 DataFiles/*
 Archives/*
 Output/*
+*.gnu
+*.gif
