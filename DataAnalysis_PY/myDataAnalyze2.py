@@ -123,6 +123,7 @@ else:
     mySend2GnuPlot('set yrange [-myCartesianYStart:myCartesianYEnd]\n')
     mySend2GnuPlot('set size square\n')
     mySend2GnuPlot('set key right bottom\n')
+    myFileOutput=0
     for myDate in myDistinctDates:
       DoPlot=False
       if myStopAfter:
@@ -171,7 +172,9 @@ else:
 	    myAgregateGnuCmds.append('plot ')
 	    myAgregatePointList=[]
 	    if str(sys.argv[2])=='png':
-	      mySend2GnuPlot('set output \'png/file'+str(myDate)+"_"+str(myStartStep)+'.png\'\n')
+	      #mySend2GnuPlot('set output \'png/file'+'%5s' % myFileOutput+'.png\'\n')
+	      mySend2GnuPlot('set output \'png/file'+str(myFileOutput).zfill(5)+'.png\'\n')
+	      myFileOutput=myFileOutput+1
 	    #mySend2GnuPlot('set multiplot layout 2,1\n')
 	    mySend2GnuPlot('set multiplot layout 2,'+str(len(myTopicsNames))+'\n')
 	    for i in range(0,len(myTopicsNames)):
@@ -181,9 +184,11 @@ else:
 	      myLocalGnuCmds2=[]
 	      if (i==1):
 		myDateTimeObj=datetime.datetime.fromtimestamp(float(myDate))
-		myLocalGnuCmds.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
+		#myLocalGnuCmds.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
+		myLocalGnuCmds2.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 	      else:
-		myLocalGnuCmds.append('set title "a"\n')
+		myLocalGnuCmds.append('set title "-"\n')
+		myLocalGnuCmds2.append('set title "-"\n')
 	      if len(myLocalLL[i])>=myStartStep+1:
 		myResult=myGnu2DCartesian(myLocalLL[i][myStartStep],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i])
 		myLocalGnuCmds.append(myResult[0])

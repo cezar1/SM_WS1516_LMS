@@ -1,0 +1,3 @@
+python myDataAnalyze2.py ../DataFiles/LaserScan_ts_common.txt png
+gnuplot myPlotGP_CMD.gnu
+~/Downloads/ffmpeg-2.8.3-64bit-static/ffmpeg -f image2 -r 10 -i png/file%5d.png -r 24 video.mkv
