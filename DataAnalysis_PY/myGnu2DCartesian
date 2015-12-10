@@ -1,0 +1,6 @@
+myGnuPlotCmds=[]
+def myOutput(vMessage):
+  myGnuPlotCmds.append(vMessage)
+def myGnu2DCartesian(dataSeriesRaw,vTopicName):
+  myDebug=False
+  if myDebug:print "myGnu2DCartesian on date "+str()+" and topic "+vTopicName
