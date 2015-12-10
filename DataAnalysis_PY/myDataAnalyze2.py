@@ -10,7 +10,7 @@ import datetime
 myStopAfter=False
 myStartOffset=0
 myStopAfterSeconds=5
-myBackGroundSampleIndex=1#target date to extract background features
+myBackGroundSampleIndex=10#target date to extract background features
 
 def mySend2GnuPlot(vCmd):
   #print vCmd

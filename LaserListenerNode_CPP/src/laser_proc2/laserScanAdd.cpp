@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     else if (i==1) mySubscriber2=n.subscribe(myTopics[i].c_str(), 1, myCallBack2);
     else if (i==2) mySubscriber3=n.subscribe(myTopics[i].c_str(), 1, myCallBack3);  
     fprintf(stderr,"Laser proc 2.Subscribed to %s. Printing to %s. \n",myTopics[i].c_str(), myOutputFileName.c_str());  
-    fprintf(myOutputFile,"# topic %s\n",myTopics[i].c_str());
+    fprintf(myOutputFile,"# topic %s 0 0 0\n",myTopics[i].c_str());
   }
   fclose (myOutputFile);
   ros::spin();

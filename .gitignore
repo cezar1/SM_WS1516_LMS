@@ -7,3 +7,4 @@ Archives/*
 Output/*
 *.gnu
 *.gif
+*.pyc
