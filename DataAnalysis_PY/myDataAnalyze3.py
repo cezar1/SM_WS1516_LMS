@@ -12,7 +12,10 @@ myStopAfter=True
 myStartOffset=10
 myStopAfterSeconds=8
 myBackGroundSampleIndex=3#target date to extract background features
-myShowCentroid=True
+myShowCentroid=False#trajectory
+myShowLineFitTraj=True#trajectory
+myShowLineFit=True
+myShowICPMatches=False
 
 def mySend2GnuPlot(vCmd):
   #print vCmd
@@ -198,10 +201,12 @@ else:
 		myDateTimeObjBack=datetime.datetime.fromtimestamp(float(myBackGroundDate))
 		#myLocalGnuCmds.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 		myLocalGnuCmds2.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+' with background '+str(myDateTimeObjBack.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
-		if myShowCentroid:
+		if myShowCentroid and myShowLineFitTraj:
+		  myLocalGnuCmds3.append('set title "Centroid and line fitting"\n')
+		elif myShowCentroid:
 		  myLocalGnuCmds3.append('set title "ICP matching with centroid trajectory"\n')
 		else:
-		  myLocalGnuCmds3.append('set title "ICP matching"\n')
+		  myLocalGnuCmds3.append('set title "Line fitting trajectory"\n')
 	      else:
 		#myLocalGnuCmds.append('set title "-"\n')
 		myLocalGnuCmds2.append('set title "-"\n')
@@ -221,22 +226,44 @@ else:
 		  #myLocalGnuCmds2.append('set xrange ['+str(myDynamicRangeXStart)+':'+str(myDynamicRangeXEnd)+']\n')
 		  #myLocalGnuCmds2.append('set yrange ['+str(myDynamicRangeYStart)+':'+str(myDynamicRangeYEnd)+']\n')
 		  #first line of graphs
-		  
-		  if myShowCentroid:
+		  if myShowCentroid and myShowLineFitTraj:
 		    myLocalGnuCmds2.append(myResult_ICP[5])
 		    myLocalGnuCmds2.append(myResult_ICP[8])
+		    myLocalGnuCmds2.append(myResult_ICP[11])
+		  elif myShowCentroid:
+		    myLocalGnuCmds2.append(myResult_ICP[5])
+		    myLocalGnuCmds2.append(myResult_ICP[8])
+		  elif myShowLineFit:
+		    myLocalGnuCmds2.append(myResult_ICP[5])
+		    myLocalGnuCmds2.append(myResult_ICP[9])
+		    myLocalGnuCmds2.append(myResult_ICP[10])
+		    myLocalGnuCmds2.append(myResult_ICP[11])
 		  else:
 		    myLocalGnuCmds2.append(myResult_ICP[2])
+		  
+		  
 		  #second line of graphs
 		  myLocalGnuCmds3.append(myResult_ICP[3])
 		  myLocalGnuCmds3.append(myResult_ICP[4])
 		  myLocalGnuCmds3.append(myResult_ICP[5])
-		  myLocalGnuCmds3.append(myResult_ICP[6])
-		  myLocalGnuCmds3.append(myResult_ICP[7])
-		  if myShowCentroid:
+		  
+		  if myShowCentroid and myShowLineFitTraj:
 		    myLocalGnuCmds3.append(myResult_ICP[8])
+		    myLocalGnuCmds3.append(myResult_ICP[11])
+		  elif myShowICPMatches:
+		    myLocalGnuCmds3.append(myResult_ICP[6])
+		    myLocalGnuCmds3.append(myResult_ICP[7])
 		  else:
-		    myLocalGnuCmds3.append('\n')
+		    if myShowCentroid:
+		      myLocalGnuCmds3.append(myResult_ICP[8])
+		    #else:
+		      #myLocalGnuCmds3.append('\n')
+		    if myShowLineFit:
+		      myLocalGnuCmds3.append(myResult_ICP[9])
+		      myLocalGnuCmds3.append(myResult_ICP[10])
+		      myLocalGnuCmds3.append(myResult_ICP[11])
+		    else:
+		      myLocalGnuCmds3.append('\n')
 		else:
 		  myResult_ICP=myICP_Consecutive_MakeEmpty(myQualifiedTopicName)
 		  myLocalGnuCmds2.append(myResult_ICP[0])
