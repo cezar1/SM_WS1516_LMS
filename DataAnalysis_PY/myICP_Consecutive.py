@@ -1,4 +1,5 @@
 import math
+import os
 import datetime
 myGnuPlotCmds=[]
 myDebug=False
@@ -90,6 +91,26 @@ def myCreateDatFileICP(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotate,d
     if myFound:
       f.write(str(myX)+" "+str(myY)+"\n"+str(myLastXPrev)+" "+str(myLastYPrev)+"\n\n")
   f.close()
+def myCreateDatFileCentroid(vFileName,vLocalFileName,vCentroid):
+  global myDebug
+  #myTargetFilename='dat/output_'+vFileName+'.dat'
+  if myDebug:print "myCreateDatFileCentroid : ["+vFileName+"]"
+  if os.path.isfile(vFileName):
+    f = open(vFileName, 'r')
+    g = open(vLocalFileName, 'w')
+    lines = f.readlines()
+    for line in lines:
+      g.write(line)
+    f.close()
+  else:
+    g = open(vLocalFileName, 'w')
+  #Append last information
+  if (vCentroid[0]!=0 or vCentroid[1]!=0):
+    f = open(vFileName, 'a')
+    f.write(str(vCentroid[0])+" "+str(vCentroid[1])+"\n")
+    g.write(str(vCentroid[0])+" "+str(vCentroid[1])+"\n")
+    f.close()
+    g.close()
 def myCreateDatFileSample(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotate,dataSeriesBackGround):
   global myDebug
   #myTargetFilename='dat/output_'+vFileName+'.dat'
@@ -147,8 +168,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_prev.dat'
   myCreateDatFileSample(dataSeriesPrevSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesBackGround)
   #4
-  myGnuPlotCmds.append('"'+myTargetFilename+'" u 1:2 lt rgb "green" title "'+vTopicName[5:9]+' previous",')
-  if myDebug:print "myICP_Consecutive has "+str(len(myGnuPlotCmds))+" elements"
+  myGnuPlotCmds.append('"'+myTargetFilename+'" u 1:2 lt rgb "green" title "previous",')
   #ICP iterations, blue
   myRotate=0#degrees rotate the robot angle, for plotting only
   myTranslateX=0.0
@@ -156,7 +176,16 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_iterations.dat'
   myCreateDatFileICP(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
   #5
-  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "blue" title "'+vTopicName[5:9]+' matches" with line\n')
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "blue" title "matches" with line,')
+  #centroid
+  myRotate=0#degrees rotate the robot angle, for plotting only
+  myTranslateX=0.0
+  myTranslateY=0.0
+  myCentroidTargetFilename='dat/output_'+vTopicName[5:9]+'_ICP_centroid.dat'
+  myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_centroid.dat'
+  myCreateDatFileCentroid(myCentroidTargetFilename,myTargetFilename,myCentroid)
+  #6
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "cyan" linewidth 3 title "centroid" with line\n')
   if myDebug:print "myICP_Consecutive has "+str(len(myGnuPlotCmds))+" elements"
   return myGnuPlotCmds
   

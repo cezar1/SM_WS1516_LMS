@@ -10,8 +10,9 @@ import datetime
 
 myStopAfter=True
 myStartOffset=10
-myStopAfterSeconds=3
+myStopAfterSeconds=8
 myBackGroundSampleIndex=3#target date to extract background features
+myShowCentroid=True
 
 def mySend2GnuPlot(vCmd):
   #print vCmd
@@ -197,7 +198,10 @@ else:
 		myDateTimeObjBack=datetime.datetime.fromtimestamp(float(myBackGroundDate))
 		#myLocalGnuCmds.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 		myLocalGnuCmds2.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+' with background '+str(myDateTimeObjBack.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
-		myLocalGnuCmds3.append('set title "ICP matching"\n')
+		if myShowCentroid:
+		  myLocalGnuCmds3.append('set title "ICP matching with centroid trajectory"\n')
+		else:
+		  myLocalGnuCmds3.append('set title "ICP matching"\n')
 	      else:
 		#myLocalGnuCmds.append('set title "-"\n')
 		myLocalGnuCmds2.append('set title "-"\n')
@@ -216,12 +220,23 @@ else:
 		  #myDynamicRangeYEnd=-0.3
 		  #myLocalGnuCmds2.append('set xrange ['+str(myDynamicRangeXStart)+':'+str(myDynamicRangeXEnd)+']\n')
 		  #myLocalGnuCmds2.append('set yrange ['+str(myDynamicRangeYStart)+':'+str(myDynamicRangeYEnd)+']\n')
-		  myLocalGnuCmds2.append(myResult_ICP[2])
+		  #first line of graphs
+		  
+		  if myShowCentroid:
+		    myLocalGnuCmds2.append(myResult_ICP[5])
+		    myLocalGnuCmds2.append(myResult_ICP[8])
+		  else:
+		    myLocalGnuCmds2.append(myResult_ICP[2])
+		  #second line of graphs
 		  myLocalGnuCmds3.append(myResult_ICP[3])
 		  myLocalGnuCmds3.append(myResult_ICP[4])
 		  myLocalGnuCmds3.append(myResult_ICP[5])
 		  myLocalGnuCmds3.append(myResult_ICP[6])
 		  myLocalGnuCmds3.append(myResult_ICP[7])
+		  if myShowCentroid:
+		    myLocalGnuCmds3.append(myResult_ICP[8])
+		  else:
+		    myLocalGnuCmds3.append('\n')
 		else:
 		  myResult_ICP=myICP_Consecutive_MakeEmpty(myQualifiedTopicName)
 		  myLocalGnuCmds2.append(myResult_ICP[0])
