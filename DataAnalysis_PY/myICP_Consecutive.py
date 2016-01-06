@@ -3,8 +3,8 @@ import datetime
 myGnuPlotCmds=[]
 myDebug=False
 mySubtractThreshhold=0.3
-myZoom=0.5
-myMinX=-1
+myZoom=0.3
+myMinX=-1.3
 myMaxX=0
 myMinY=0
 myMaxY=1
@@ -69,22 +69,26 @@ def myCreateDatFileICP(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotate,d
   #myTargetFilename='dat/output_'+vFileName+'.dat'
   if myDebug:print "myCreateDatFileSample : ["+vFileName+"] Translate X "+str(vTranslateX)+" translate Y "+str(vTranslateY)+" rotate Z "+str(vRotate)
   f = open(vFileName, 'w')
+  
   for i in range(1,len(dataSeriesRaw),2):
-    myDist=10000
+    myDist=0.05
     myX=math.cos(math.radians(float(dataSeriesRaw[i])/2))*float(dataSeriesRaw[i+1])
     myY=math.sin(math.radians(float(dataSeriesRaw[i])/2))*float(dataSeriesRaw[i+1])
     myLastXPrev=10000
     myLastYPrev=10000
+    myFound=False
     for j in range(1,len(dataSeriesPrevious),2):
       myXPrev=math.cos(math.radians(float(dataSeriesPrevious[j])/2))*float(dataSeriesPrevious[j+1])
       myYPrev=math.sin(math.radians(float(dataSeriesPrevious[j])/2))*float(dataSeriesPrevious[j+1])
       #calculate cartesian distance
-      myCartesianDistance=(myX-myXPrev)*(myX-myXPrev)+(myY-myYPrev)*(myY-myYPrev)
+      myCartesianDistance=math.sqrt((myX-myXPrev)*(myX-myXPrev)+(myY-myYPrev)*(myY-myYPrev))
       if myCartesianDistance<myDist:
 	myDist=myCartesianDistance
 	myLastXPrev=myXPrev
 	myLastYPrev=myYPrev
-    f.write(str(myX)+" "+str(myY)+"\n"+str(myLastXPrev)+" "+str(myLastYPrev)+"\n\n")
+	myFound=True
+    if myFound:
+      f.write(str(myX)+" "+str(myY)+"\n"+str(myLastXPrev)+" "+str(myLastYPrev)+"\n\n")
   f.close()
 def myCreateDatFileSample(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotate,dataSeriesBackGround):
   global myDebug
@@ -125,6 +129,8 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_sub.dat'
   dataSeriesSub1=mySubtractBackground(dataSeriesRaw,dataSeriesBackGround)
   dataSeriesSub=myFilterRange(dataSeriesSub1)
+  dataSeriesPrevSub1=mySubtractBackground(dataSeriesPrevious,dataSeriesBackGround)
+  dataSeriesPrevSub=myFilterRange(dataSeriesPrevSub1)
   myCreateDatFile(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate)
   #2
   myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+'"\n')
@@ -139,7 +145,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTranslateX=0.0
   myTranslateY=0.0
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_prev.dat'
-  myCreateDatFileSample(dataSeriesPrevious,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesBackGround)
+  myCreateDatFileSample(dataSeriesPrevSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesBackGround)
   #4
   myGnuPlotCmds.append('"'+myTargetFilename+'" u 1:2 lt rgb "green" title "'+vTopicName[5:9]+' previous",')
   if myDebug:print "myICP_Consecutive has "+str(len(myGnuPlotCmds))+" elements"
@@ -148,7 +154,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTranslateX=0.0
   myTranslateY=0.0
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_iterations.dat'
-  myCreateDatFileICP(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevious)
+  myCreateDatFileICP(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
   #5
   myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "blue" title "'+vTopicName[5:9]+' matches" with line\n')
   if myDebug:print "myICP_Consecutive has "+str(len(myGnuPlotCmds))+" elements"

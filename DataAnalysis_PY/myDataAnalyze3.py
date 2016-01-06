@@ -109,7 +109,7 @@ else:
       print "Topic "+myTopicsNames[i]+" has "+str(len(myBackgroundContainer[i]))+" ranges(angle+distance) +1 date in background sample"
 	  
     #Preamble
-    myMaxRange=2.5
+    myMaxRange=1.5
     mySend2GnuPlot('myCartesianXStart='+str(myMaxRange)+'\n')
     mySend2GnuPlot('myCartesianXEnd='+str(myMaxRange)+'\n')
     mySend2GnuPlot('myCartesianYStart='+str(myMaxRange)+'\n')
@@ -186,7 +186,7 @@ else:
 	    for i in range(0,len(myTopicsNames)):
 	      #print str(len(myLocalLL[i]))+">="+str(myStartStep)
 	      myQualifiedTopicName=myTopicsNames[i]+"_"+str(myDate)+"_"+str(myStartStep)
-	      myLocalGnuCmds=[]
+	      #myLocalGnuCmds=[]
 	      myLocalGnuCmds2=[]
 	      myLocalGnuCmds3=[]
 	      if (i==0):
@@ -199,13 +199,13 @@ else:
 		myLocalGnuCmds2.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+' with background '+str(myDateTimeObjBack.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 		myLocalGnuCmds3.append('set title "ICP matching"\n')
 	      else:
-		myLocalGnuCmds.append('set title "-"\n')
+		#myLocalGnuCmds.append('set title "-"\n')
 		myLocalGnuCmds2.append('set title "-"\n')
 		myLocalGnuCmds3.append('set title "-"\n')
 	      if len(myLocalLL[i])>=myStartStep+1:
-		myResult=myGnu2DCartesian(myLocalLL[i][myStartStep],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i])
-		myLocalGnuCmds.append(myResult[0])
-		myAgregateGnuCmds.append(myResult[1])
+		#myResult=myGnu2DCartesian(myLocalLL[i][myStartStep],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i])
+		#myLocalGnuCmds.append(myResult[0])
+		#myAgregateGnuCmds.append(myResult[1])
 		#myLocalGnuCmds2.append(myResult[2])
 		if len(myICP_PreviousDataSet[i])>0:
 		  myResult_ICP=myICP_Consecutive(myLocalLL[i][myStartStep],myICP_PreviousDataSet[i],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i])
@@ -224,7 +224,7 @@ else:
 		  myLocalGnuCmds3.append(myResult_ICP[7])
 		else:
 		  myResult_ICP=myICP_Consecutive_MakeEmpty(myQualifiedTopicName)
-		  myLocalGnuCmds2.append(myResult[2])
+		  myLocalGnuCmds2.append(myResult_ICP[0])
 		  myLocalGnuCmds3.append(myResult_ICP[0])
 		myICP_PreviousDataSet[i]=myLocalLL[i][myStartStep]
 		myFoundAnyPointImage=True
