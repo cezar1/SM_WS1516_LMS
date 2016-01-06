@@ -182,6 +182,20 @@ def myCreateDatFileBoxRectangle(vLineFits,vFileName):
   myLineFitCenterY=(vLineFits[i*2+1]+vLineFits[j*2+5])/2
   myLineFitFarCornerX=(vLineFits[(1-i)*2]+vLineFits[(1-j)*2+4])/2
   myLineFitFarCornerY=(vLineFits[(1-i)*2+1]+vLineFits[(1-j)*2+5])/2
+  x1=myLineFitCenterX
+  y1=myLineFitCenterY
+  x2=myLineFitFarCornerX
+  y2=myLineFitFarCornerY
+  a=(y2-y1)/(x2-x1)
+  b=y1-a*x1
+  d=0.5
+  exp1=-2*x1+2*a*(b-y1)
+  exp11=4*(1+a*a)
+  exp2=exp11*(y1*y1-d*d)
+  myDelta=math.fabs(exp1*exp1-exp2)
+  #print "Delta: "+str(myDelta)
+  xm1=(-(-2*x1+2*a*(b-y1))+math.sqrt(myDelta))/(2*(1+a*a))
+  ym1=a*xm1+b
   #print "Corner indexes: "+str(i)+" "+str(j)
   #print "Opposite corner indexes: "+str(1-i)+" "+str(1-j)
   f.write(str(myLineFitCenterX)+" "+str(myLineFitCenterY)+"\n")
@@ -190,6 +204,9 @@ def myCreateDatFileBoxRectangle(vLineFits,vFileName):
   
   myLineFitCenter.append((myLineFitCenterX+myLineFitFarCornerX)/2)
   myLineFitCenter.append((myLineFitCenterY+myLineFitFarCornerY)/2)
+  #myLineFitCenter.append(xm1)
+  #myLineFitCenter.append(ym1)
+  
   return myLineFitCenter
   f.close()
 def myCreateDatFileCentroid(vFileName,vLocalFileName,vCentroid):

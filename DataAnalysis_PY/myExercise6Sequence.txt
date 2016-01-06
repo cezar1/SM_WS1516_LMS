@@ -1,0 +1,28 @@
+python myDataAnalyze3.py ../DataFiles/LaserScan_ts_common.txt png
+gnuplot myPlotGP_ICP_CMD.gnu
+ffmpeg -f image2 -r 5 -i png/file%5d.png -r 24 Part2_line_fit.mkv
+DataAnalyze3 - output is myPlotGP_ICP_CMD.gnu. Launch gnuplot after!
+png output
+Finding ../DataFiles/LaserScan_ts_common.txt..
+Opening ../DataFiles/LaserScan_ts_common.txt..
+Contains 433603 lines
+Topic /LMS_irma has 267 elements(incl date as point)
+Topic /LMS_achim has 266 elements(incl date as point)
+Topic /LMS_lars has 266 elements(incl date as point)
+Total 28 independent instances of seconds
+Background date:1449750888
+Topic /LMS_irma has 1083 ranges(angle+distance) +1 date in background sample
+Topic /LMS_achim has 1083 ranges(angle+distance) +1 date in background sample
+Topic /LMS_lars has 1083 ranges(angle+distance) +1 date in background sample
+Date 1449750895 has:
+/LMS_irma 10 hits.
+/LMS_achim 10 hits.
+/LMS_lars 10 hits.
+Date 1449750896 has:
+/LMS_irma 10 hits.
+/LMS_achim 10 hits.
+/LMS_lars 10 hits.
+Date 1449750897 has:
+/LMS_irma 10 hits.
+/LMS_achim 10 hits.
+/LMS_lars 10 hits.
