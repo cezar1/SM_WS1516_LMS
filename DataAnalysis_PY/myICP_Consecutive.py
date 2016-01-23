@@ -9,6 +9,7 @@ myMinX=-1.3
 myMaxX=0
 myMinY=0
 myMaxY=1
+cPoseVectorLength=0.25
 
 def myOutput(vMessage):
   myGnuPlotCmds.append(vMessage)
@@ -52,6 +53,7 @@ def mySubtractBackground(dataSeriesRaw,dataSeriesBackGround):
       myDataSeriesSubtracted.append(dataSeriesRaw[i+1])
   return myDataSeriesSubtracted
 def myFilterRange(dataSeriesRaw):
+  
   myDataSeriesSubtracted=[]
   myDataSeriesSubtracted.append(dataSeriesRaw[0])
   #print "myFilterRange"
@@ -64,6 +66,34 @@ def myFilterRange(dataSeriesRaw):
       myDataSeriesSubtracted.append(dataSeriesRaw[i])
       myDataSeriesSubtracted.append(dataSeriesRaw[i+1])
   return myDataSeriesSubtracted
+def myCreateDatFileICP_Vector(vVector,vFileName):
+  myVector=[]
+  myVector.append(vVector[0])#X origin
+  myVector.append(vVector[1])#Y origin
+  myVector.append(vVector[2])#theta
+  myVector.append(vVector[3])#length
+  f = open(vFileName, 'w')
+  #calculate end point from theta and length
+  myEndPoint=[]
+  myEndPoint.append(myVector[0]+myVector[3]*math.cos(math.radians(myVector[2])))
+  myEndPoint.append(myVector[1]+myVector[3]*math.sin(math.radians(myVector[2])))
+  if myVector[0]!=0 and myVector[1]!=0:
+    f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myEndPoint[0])+" "+str(myEndPoint[1]))
+  f.close()
+def myCreateDatFileBox_Vector(vVector,vFileName):
+  myVector=[]
+  myVector.append(vVector[0])#X origin
+  myVector.append(vVector[1])#Y origin
+  myVector.append(vVector[2])#theta
+  myVector.append(vVector[3])#length
+  f = open(vFileName, 'w')
+  #calculate end point from theta and length
+  myEndPoint=[]
+  myEndPoint.append(myVector[0]+myVector[3]*math.cos(math.radians(myVector[2])))
+  myEndPoint.append(myVector[1]+myVector[3]*math.sin(math.radians(myVector[2])))
+  if myVector[0]!=0 and myVector[1]!=0:
+    f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myEndPoint[0])+" "+str(myEndPoint[1]))
+  f.close()
 def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
   myDebug=True
   #Make an initial pass to calculate the points
@@ -303,6 +333,12 @@ def myCreateDatFileBoxRectangle(vLineFits,vFileName):
   
   myLineFitCenter.append((myLineFitCenterX+myLineFitFarCornerX)/2)
   myLineFitCenter.append((myLineFitCenterY+myLineFitFarCornerY)/2)
+  myLineFitCenter.append(myLineFitCenterX)
+  myLineFitCenter.append(myLineFitCenterY)
+  myAngle=math.atan2(myLineFitCenterY-myLineFitFarCornerY,myLineFitCenterX-myLineFitFarCornerX)
+  myAngle=math.degrees(myAngle)+180
+  myLineFitCenter.append(myAngle)
+  print "Box slope is ["+str(myAngle)+"]"
   #myLineFitCenter.append(xm1)
   #myLineFitCenter.append(ym1)
   
@@ -417,7 +453,7 @@ def myCreateDatFileSample(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotat
       #if myDebug:print "Angle "+str(float(dataSeriesRaw[i])/2)+" range "+str(dataSeriesRaw[i+1])+"=> X ["+str(myX)+"] Y ["+str(myY)+"]"
       f.write(str(myX)+" "+str(myY)+"\n")
   f.close()
-def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTopicPose,dataSeriesBackGround):
+def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTopicPose,dataSeriesBackGround,vICP_Pose,vICP_Initialized):
   myGnuPlotCmds=[]
   myDebug=False
   #make two passes, one with original coordinates, other with transformations
@@ -450,6 +486,11 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+'"')
   #Zoom in data range
   myCentroid=myGetCentroid(dataSeriesSub)
+  #Initialize ICP pose to centroid
+  if vICP_Pose[0]==0:
+    vICP_Pose[0]=myCentroid[0]
+  if vICP_Pose[1]==0:
+    vICP_Pose[1]=myCentroid[1]
   myGnuPlotCmds.append('set xrange ['+str(myCentroid[0]-myZoom)+':'+str(myCentroid[0]+myZoom)+']')
   myGnuPlotCmds.append('set yrange ['+str(myCentroid[1]-myZoom)+':'+str(myCentroid[1]+myZoom)+']')
   #3 actual position
@@ -488,12 +529,14 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTranslateY=0.0
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit.dat'
   myLineFits=myCreateDatFileLineFit(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
-  if len(myLineFits)/4==2:
+  myBoxAvailable=len(myLineFits)/4==2
+  #print myBoxAvailable
+  if myBoxAvailable:
     myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "magenta" linewidth 3 title "line fit" with line')
   else:
     myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "magenta" linewidth 3 title "line fit" with line')
   #---------------------------------------------------------------------------------------------------------------------
-  if len(myLineFits)/4==2:
+  if myBoxAvailable:
     #box rectangle
     myRotate=0#degrees rotate the robot angle, for plotting only
     myTranslateX=0.0
@@ -501,6 +544,9 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myLineFitTrajFilename='dat/output_'+vTopicName[5:9]+'_ICP_line_fit_rect.dat'
     myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit_rect.dat'
     myLineFitCenter=myCreateDatFileBoxRectangle(myLineFits,myTargetFilename)
+    if vICP_Initialized[0]==0:
+      vICP_Pose[2]=myLineFitCenter[4]
+      vICP_Initialized[0]=1
     myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "black" linewidth 3 title "box"')
     #trajectory of box center
     myRotate=0#degrees rotate the robot angle, for plotting only
@@ -542,7 +588,43 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myKalman_Result.append(0)
     myKalman_Result.append(0)
   myCreateDatFileKalman_TRAJ(myICP_KALMAN_TargetFilename,myTargetFilename,myKalman_Result)
-  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#00AAAA" linewidth 3 title "Kalman output" with line')
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#994C00" linewidth 3 title "Kalman output" with line')
+  
+  #ICP result vector
+  myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_vector.dat'
+  myICP_Vector=[]
+  if myCentroid[0]!=0:
+    #vICP_Pose[0]+=0.05
+    #vICP_Pose[1]+=0.05
+    #vICP_Pose[2]+=10
+    myICP_Vector.append(vICP_Pose[0])
+    myICP_Vector.append(vICP_Pose[1])
+    myICP_Vector.append(vICP_Pose[2])
+    myICP_Vector.append(cPoseVectorLength)
+  else:
+    myICP_Vector.append(0)
+    myICP_Vector.append(0)
+    myICP_Vector.append(45)
+    myICP_Vector.append(0.15)
+  myCreateDatFileICP_Vector(myICP_Vector,myTargetFilename)
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#FF6666" linewidth 3 title "ICP pose" with line')
+  
+  #Box result vector
+  myTargetFilename='dat/output_'+vTopicName[1:]+'_box_vector.dat'
+  myBox_Vector=[]
+  if myBoxAvailable:
+    myBox_Vector.append(myLineFitCenter[2])
+    myBox_Vector.append(myLineFitCenter[3])
+    myBox_Vector.append(myLineFitCenter[4])
+    myBox_Vector.append(cPoseVectorLength)
+  else:
+    myBox_Vector.append(0)
+    myBox_Vector.append(0)
+    myBox_Vector.append(0)
+    myBox_Vector.append(0)
+  myCreateDatFileBox_Vector(myBox_Vector,myTargetFilename)
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#3399FF" linewidth 3 title "BOX pose" with line')
+  
   return myGnuPlotCmds
   
 def myICP_Consecutive_MakeEmpty(vTopicName):
