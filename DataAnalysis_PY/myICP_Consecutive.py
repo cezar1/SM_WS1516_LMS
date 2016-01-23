@@ -64,12 +64,111 @@ def myFilterRange(dataSeriesRaw):
       myDataSeriesSubtracted.append(dataSeriesRaw[i])
       myDataSeriesSubtracted.append(dataSeriesRaw[i+1])
   return myDataSeriesSubtracted
+def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
+  myDebug=True
+  #Make an initial pass to calculate the points
+  myMatchedOriginal=[]
+  myMatchedPrevious=[]
+  for i in range(1,len(dataSeriesRaw),2):
+    myX=math.cos(math.radians(float(dataSeriesRaw[i])/2))*float(dataSeriesRaw[i+1])
+    myY=math.sin(math.radians(float(dataSeriesRaw[i])/2))*float(dataSeriesRaw[i+1])
+    myMatchedOriginal.append(myX)
+    myMatchedOriginal.append(myY)
+
+  for j in range(1,len(dataSeriesPrevious),2):
+    myXPrev=math.cos(math.radians(float(dataSeriesPrevious[j])/2))*float(dataSeriesPrevious[j+1])
+    myYPrev=math.sin(math.radians(float(dataSeriesPrevious[j])/2))*float(dataSeriesPrevious[j+1])
+    myMatchedPrevious.append(myXPrev)
+    myMatchedPrevious.append(myYPrev)
+
+    
   
+  #Algorithm is prepared with list of cartesian points in myMatchedOriginal and myMatchedPrevious
+  myTranslationX=0	#result 
+  myTranslationY=0	#result
+  myTheta=0	#result
+  myDeltaTranslationX=0
+  myDeltaTranslationY=0
+  myDeltaTranslationTheta=0
+  if myDebug:print "Have "+str(len(myMatchedPrevious))+" elements in myMatchedPrevious"
+  if len(myMatchedPrevious)>0:
+    for k in range(0,vIterations):
+      print "Doing iteration "+str(k)
+      myNewMatchedOrig=[]
+      myNewMatchedPrev=[]
+      myCurrentPrevious=[]
+      #At each iteration apply current results on previous points
+      #Calculate centroid
+      myXPrevSum=0
+      myYPrevSum=0
+      myPointsNr=0
+      for j in range(0,len(myMatchedPrevious),2):
+	myXPrevSum+=myMatchedPrevious[j]
+	myYPrevSum+=myMatchedPrevious[j+1]
+	myPointsNr+=1
+      myCentroidX=myXPrevSum/myPointsNr
+      myCentroidY=myYPrevSum/myPointsNr
+      print "Did centroid on "+str(myPointsNr)+" points"
+      myCosine=math.cos(math.radians(myDeltaTranslationTheta))
+      mySine=math.sin(math.radians(myDeltaTranslationTheta))
+      print "Theta: ["+str(myDeltaTranslationTheta)+"] deg. Sine: ["+str(mySine)+"].Cosine: ["+str(myCosine)+"]"
+      #Apply rotation of previous points around centroid
+      #for j in range(0,len(myMatchedPrevious),2)
+	#myXPrev=math.cos(math.radians(myDeltaTranslationTheta))*myMatchedPrevious(j)+myDeltaTranslationX
+	#myYPrev=myMatchedPrevious(j)+myDeltaTranslationY
+      #Make matching
+      for i in range(0,len(myMatchedOriginal),2):
+	myDist=0.05
+	myX=myMatchedOriginal[i]
+	myY=myMatchedOriginal[i+1]
+	myFound=False
+	for j in range(0,len(myMatchedPrevious),2):
+	  myPrevX=myMatchedPrevious[j]
+	  myPrevY=myMatchedPrevious[j+1]
+	  myCartesianDistance=math.sqrt((myX-myXPrev)*(myX-myXPrev)+(myY-myYPrev)*(myY-myYPrev))
+	  if myCartesianDistance<myDist:
+	    myDist=myCartesianDistance
+	    myLastXPrev=myXPrev
+	    myLastYPrev=myYPrev
+	    myFound=True
+	  if myFound:
+	    myNewMatchedOrig.append(myXPrev)
+	    myNewMatchedOrig.append(myYPrev)
+	    myNewMatchedPrev.append(myXPrev)
+	    myNewMatchedPrev.append(myYPrev)
+  
+  #for i in range(1,len(dataSeriesRaw),2):
+    #myDist=0.05
+    #myX=math.cos(math.radians(float(dataSeriesRaw[i])/2))*float(dataSeriesRaw[i+1])
+    #myY=math.sin(math.radians(float(dataSeriesRaw[i])/2))*float(dataSeriesRaw[i+1])
+    #myLastXPrev=10000
+    #myLastYPrev=10000
+    #myFound=False
+    #for j in range(1,len(dataSeriesPrevious),2):
+      #myXPrev=math.cos(math.radians(float(dataSeriesPrevious[j])/2))*float(dataSeriesPrevious[j+1])
+      #myYPrev=math.sin(math.radians(float(dataSeriesPrevious[j])/2))*float(dataSeriesPrevious[j+1])
+      ##calculate cartesian distance
+      #myCartesianDistance=math.sqrt((myX-myXPrev)*(myX-myXPrev)+(myY-myYPrev)*(myY-myYPrev))
+      #if myCartesianDistance<myDist:
+	#myDist=myCartesianDistance
+	#myLastXPrev=myXPrev
+	#myLastYPrev=myYPrev
+	#myFound=True
+    #if myFound:
+      #myMatchedOriginal.append(myX)
+      #myMatchedOriginal.append(myY)
+  myResult=[]
+  myResult.append(myTranslationX)#X translation
+  myResult.append(myTranslationY)#Y translation
+  myResult.append(myTheta)#rotation
+  return myResult
 def myCreateDatFileICP(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotate,dataSeriesPrevious):
   global myDebug
   #myTargetFilename='dat/output_'+vFileName+'.dat'
   if myDebug:print "myCreateDatFileSample : ["+vFileName+"] Translate X "+str(vTranslateX)+" translate Y "+str(vTranslateY)+" rotate Z "+str(vRotate)
   f = open(vFileName, 'w')
+  #myResult=[]
+  #myResult.append("")#X translation
   
   for i in range(1,len(dataSeriesRaw),2):
     myDist=0.05
@@ -229,6 +328,46 @@ def myCreateDatFileCentroid(vFileName,vLocalFileName,vCentroid):
     g.write(str(vCentroid[0])+" "+str(vCentroid[1])+"\n")
     f.close()
     g.close()
+def myCreateDatFileICP_TRAJ(vFileName,vLocalFileName,vCentroid):
+  global myDebug
+  #myTargetFilename='dat/output_'+vFileName+'.dat'
+  if myDebug:print "myCreateDatFileICP_TRAJ : ["+vFileName+"]"
+  if os.path.isfile(vFileName):
+    f = open(vFileName, 'r')
+    g = open(vLocalFileName, 'w')
+    lines = f.readlines()
+    for line in lines:
+      g.write(line)
+    f.close()
+  else:
+    g = open(vLocalFileName, 'w')
+  #Append last information
+  if (vCentroid[0]!=0 or vCentroid[1]!=0):
+    f = open(vFileName, 'a')
+    f.write(str(vCentroid[0])+" "+str(vCentroid[1])+"\n")
+    g.write(str(vCentroid[0])+" "+str(vCentroid[1])+"\n")
+    f.close()
+    g.close()
+def myCreateDatFileKalman_TRAJ(vFileName,vLocalFileName,vCentroid):
+  global myDebug
+  #myTargetFilename='dat/output_'+vFileName+'.dat'
+  if myDebug:print "myCreateDatFileKalman_TRAJ : ["+vFileName+"]"
+  if os.path.isfile(vFileName):
+    f = open(vFileName, 'r')
+    g = open(vLocalFileName, 'w')
+    lines = f.readlines()
+    for line in lines:
+      g.write(line)
+    f.close()
+  else:
+    g = open(vLocalFileName, 'w')
+  #Append last information
+  if (vCentroid[0]!=0 or vCentroid[1]!=0):
+    f = open(vFileName, 'a')
+    f.write(str(vCentroid[0])+" "+str(vCentroid[1])+"\n")
+    g.write(str(vCentroid[0])+" "+str(vCentroid[1])+"\n")
+    f.close()
+    g.close()    
 def myCreateDatFileTrajectoryLineFits(vFileName,vLocalFileName,vLineFitCenter):
   global myDebug
   #myTargetFilename='dat/output_'+vFileName+'.dat'
@@ -289,7 +428,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP.dat'
   if myDebug:print 'Target filename:'+myTargetFilename
   myCreateDatFile(dataSeriesRaw,myTargetFilename,myTranslateX,myTranslateY,myRotate)
-  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+'"\n')
+  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+'"')
   #rotated
   myTranslateX=float(vTopicPose[0])
   myTranslateY=float(vTopicPose[1])
@@ -308,13 +447,13 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   dataSeriesPrevSub=myFilterRange(dataSeriesPrevSub1)
   myCreateDatFile(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate)
   #2
-  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+'"\n')
+  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+'"')
   #Zoom in data range
   myCentroid=myGetCentroid(dataSeriesSub)
-  myGnuPlotCmds.append('set xrange ['+str(myCentroid[0]-myZoom)+':'+str(myCentroid[0]+myZoom)+']\n')
-  myGnuPlotCmds.append('set yrange ['+str(myCentroid[1]-myZoom)+':'+str(myCentroid[1]+myZoom)+']\n')
+  myGnuPlotCmds.append('set xrange ['+str(myCentroid[0]-myZoom)+':'+str(myCentroid[0]+myZoom)+']')
+  myGnuPlotCmds.append('set yrange ['+str(myCentroid[1]-myZoom)+':'+str(myCentroid[1]+myZoom)+']')
   #3 actual position
-  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+' actual",')
+  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+' actual"')
   #previous sample, green
   myRotate=0#degrees rotate the robot angle, for plotting only
   myTranslateX=0.0
@@ -322,15 +461,17 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_prev.dat'
   myCreateDatFileSample(dataSeriesPrevSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesBackGround)
   #4
-  myGnuPlotCmds.append('"'+myTargetFilename+'" u 1:2 lt rgb "green" title "previous",')
+  myGnuPlotCmds.append('"'+myTargetFilename+'" u 1:2 lt rgb "green" title "previous"')
   #ICP iterations, blue
   myRotate=0#degrees rotate the robot angle, for plotting only
   myTranslateX=0.0
   myTranslateY=0.0
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_iterations.dat'
   myCreateDatFileICP(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
+  myICP_Centroid=myApplyICP(dataSeriesSub,dataSeriesPrevSub,3)
+  print "myICP center has "+str(len(myICP_Centroid))
   #5
-  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "blue" title "matches" with line,')
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "blue" title "matches" with line')
   #centroid
   myRotate=0#degrees rotate the robot angle, for plotting only
   myTranslateX=0.0
@@ -339,7 +480,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_centroid.dat'
   myCreateDatFileCentroid(myCentroidTargetFilename,myTargetFilename,myCentroid)
   #6
-  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "cyan" linewidth 3 title "centroid" with line,')
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "cyan" linewidth 3 title "centroid" with line')
   #---------------------------------------------------------------------------------------------------------------------
   #line fit
   myRotate=0#degrees rotate the robot angle, for plotting only
@@ -348,9 +489,9 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit.dat'
   myLineFits=myCreateDatFileLineFit(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
   if len(myLineFits)/4==2:
-    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "magenta" linewidth 3 title "line fit" with line,')
+    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "magenta" linewidth 3 title "line fit" with line')
   else:
-    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "magenta" linewidth 3 title "line fit" with line,')
+    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "magenta" linewidth 3 title "line fit" with line')
   #---------------------------------------------------------------------------------------------------------------------
   if len(myLineFits)/4==2:
     #box rectangle
@@ -360,7 +501,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myLineFitTrajFilename='dat/output_'+vTopicName[5:9]+'_ICP_line_fit_rect.dat'
     myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit_rect.dat'
     myLineFitCenter=myCreateDatFileBoxRectangle(myLineFits,myTargetFilename)
-    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "black" linewidth 3 title "box",')
+    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "black" linewidth 3 title "box"')
     #trajectory of box center
     myRotate=0#degrees rotate the robot angle, for plotting only
     myTranslateX=0.0
@@ -368,16 +509,40 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myLineFitTrajFilename='dat/output_'+vTopicName[5:9]+'_ICP_line_fit_traj.dat'
     myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit_traj.dat'
     myCreateDatFileTrajectoryLineFits(myLineFitTrajFilename,myTargetFilename,myLineFitCenter)
-    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line\n')
+    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line')
   else:
     myGnuPlotCmds.append('')
     #for box center trajectory keep existing points
     myLineFitTrajFilename='dat/output_'+vTopicName[5:9]+'_ICP_line_fit_traj.dat'
     myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit_traj.dat'
     myCreateDatFileTrajectoryNoLineFits(myLineFitTrajFilename,myTargetFilename)
-    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line\n')
+    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line')
   #if myDebug:
   #print "myICP_Consecutive has "+str(len(myGnuPlotCmds))+" elements"
+  #ICP trajectory
+  myICP_TRAJ_TargetFilename='dat/output_'+vTopicName[5:9]+'_ICP_trajectory.dat'
+  myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_trajectory_local.dat'
+  myICP_Centroid=[]
+  if myCentroid[0]!=0:
+    myICP_Centroid.append(myCentroid[0]+0.05)
+    myICP_Centroid.append(myCentroid[1]+0.05)
+  else:
+    myICP_Centroid.append(0)
+    myICP_Centroid.append(0)
+  myCreateDatFileICP_TRAJ(myICP_TRAJ_TargetFilename,myTargetFilename,myICP_Centroid)
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#0000AA" linewidth 3 title "ICP center" with line')
+  #Kalman trajectory
+  myICP_KALMAN_TargetFilename='dat/output_'+vTopicName[5:9]+'_ICP_kalman_trajectory.dat'
+  myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_kalman_trajectory_local.dat'
+  myKalman_Result=[]
+  if myCentroid[0]!=0:
+    myKalman_Result.append(myCentroid[0]-0.05)
+    myKalman_Result.append(myCentroid[1]-0.05)
+  else:
+    myKalman_Result.append(0)
+    myKalman_Result.append(0)
+  myCreateDatFileKalman_TRAJ(myICP_KALMAN_TargetFilename,myTargetFilename,myKalman_Result)
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#00AAAA" linewidth 3 title "Kalman output" with line')
   return myGnuPlotCmds
   
 def myICP_Consecutive_MakeEmpty(vTopicName):
@@ -386,7 +551,7 @@ def myICP_Consecutive_MakeEmpty(vTopicName):
   f = open(myTargetFilename, 'w')
   f.write("0 0\n")
   f.close()
-  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 title "'+vTopicName[5:9]+'"\n')
+  myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 title "'+vTopicName[5:9]+'"')
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_mod.dat'
   f = open(myTargetFilename, 'w')
   f.write("0 0\n")

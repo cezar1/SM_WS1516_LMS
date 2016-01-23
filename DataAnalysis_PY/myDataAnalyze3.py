@@ -10,12 +10,28 @@ import datetime
 
 myStopAfter=True
 myStartOffset=10
-myStopAfterSeconds=8
+myStopAfterSeconds=2
 myBackGroundSampleIndex=3#target date to extract background features
-myShowCentroid=False#trajectory
+myShowCentroid=True#trajectory
+myShowICPPrediction=True#trajectory
 myShowLineFitTraj=True#trajectory
 myShowLineFit=True
 myShowICPMatches=False
+
+gnuCmdIdx_ORIGINAL=0
+gnuCmdIdx_ROTATED=1
+gnuCmdIdx_SUBTRACTED=2
+gnuCmdIdx_ZOOMX=3
+gnuCmdIdx_ZOOMY=4
+gnuCmdIdx_SUBTRACTED2=5
+gnuCmdIdx_PREVIOUS=6
+gnuCmdIdx_ICP_MATCHES=7
+gnuCmdIdx_CENTROID=8
+gnuCmdIdx_LINE_FITS=9
+gnuCmdIdx_BOX=10
+gnuCmdIdx_BOX_TRAJ=11
+gnuCmdIdx_ICP_TRAJ=12
+gnuCmdIdx_KALMAN=13
 
 def mySend2GnuPlot(vCmd):
   #print vCmd
@@ -190,113 +206,102 @@ else:
 	    for i in range(0,len(myTopicsNames)):
 	      #print str(len(myLocalLL[i]))+">="+str(myStartStep)
 	      myQualifiedTopicName=myTopicsNames[i]+"_"+str(myDate)+"_"+str(myStartStep)
-	      #myLocalGnuCmds=[]
-	      myLocalGnuCmds2=[]
-	      myLocalGnuCmds3=[]
+	      myGnuCmdCore=[]
+	      myGnuCmdInitLine1=[]
+	      myGnuCmdInitLine2=[]
+	      myLocalZoom=[]
 	      if (i==0):
-		myLocalGnuCmds2.append('set xrange [-myCartesianXStart:myCartesianXEnd]\n')
-		myLocalGnuCmds2.append('set yrange [-myCartesianYStart:myCartesianYEnd]\n')
+		myGnuCmdInitLine1.append('set xrange [-myCartesianXStart:myCartesianXEnd]\n')
+		myGnuCmdInitLine1.append('set yrange [-myCartesianYStart:myCartesianYEnd]\n')
 	      if (i==1):
 		myDateTimeObj=datetime.datetime.fromtimestamp(float(myDate))
 		myDateTimeObjBack=datetime.datetime.fromtimestamp(float(myBackGroundDate))
-		#myLocalGnuCmds.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
-		myLocalGnuCmds2.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+' with background '+str(myDateTimeObjBack.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
-		if myShowCentroid and myShowLineFitTraj:
-		  myLocalGnuCmds3.append('set title "Centroid and line fitting"\n')
+		#myGnuCmdCore.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
+		myGnuCmdInitLine1.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+' with background '+str(myDateTimeObjBack.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
+		if myShowICPPrediction and myShowCentroid and myShowLineFitTraj:
+		  myGnuCmdInitLine2.append('set title "ICP prediction, Centroid and line fitting"\n')
+		elif myShowCentroid and myShowLineFitTraj:
+		  myGnuCmdInitLine2.append('set title "Centroid and line fitting"\n')
 		elif myShowCentroid:
-		  myLocalGnuCmds3.append('set title "ICP matching with centroid trajectory"\n')
+		  myGnuCmdInitLine2.append('set title "ICP matching with centroid trajectory"\n')
 		else:
-		  myLocalGnuCmds3.append('set title "Line fitting trajectory"\n')
+		  myGnuCmdInitLine2.append('set title "Line fitting trajectory"\n')
 	      else:
-		#myLocalGnuCmds.append('set title "-"\n')
-		myLocalGnuCmds2.append('set title "-"\n')
-		myLocalGnuCmds3.append('set title "-"\n')
-	      if len(myLocalLL[i])>=myStartStep+1:
-		#myResult=myGnu2DCartesian(myLocalLL[i][myStartStep],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i])
-		#myLocalGnuCmds.append(myResult[0])
-		#myAgregateGnuCmds.append(myResult[1])
-		#myLocalGnuCmds2.append(myResult[2])
+		#myGnuCmdCore.append('set title "-"\n')
+		myGnuCmdInitLine1.append('set title "-"\n')
+		myGnuCmdInitLine2.append('set title "-"\n')
+	      if len(myLocalLL[i])>=myStartStep+1:   
 		if len(myICP_PreviousDataSet[i])>0:
 		  myResult_ICP=myICP_Consecutive(myLocalLL[i][myStartStep],myICP_PreviousDataSet[i],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i])
-		  #myLocalGnuCmds3.append(myResult_ICP[2])
-		  #myDynamicRangeXStart=-0.5
-		  #myDynamicRangeXEnd=-0.3
-		  #myDynamicRangeYStart=-0.5
-		  #myDynamicRangeYEnd=-0.3
-		  #myLocalGnuCmds2.append('set xrange ['+str(myDynamicRangeXStart)+':'+str(myDynamicRangeXEnd)+']\n')
-		  #myLocalGnuCmds2.append('set yrange ['+str(myDynamicRangeYStart)+':'+str(myDynamicRangeYEnd)+']\n')
-		  #first line of graphs
-		  if myShowCentroid and myShowLineFitTraj:
-		    myLocalGnuCmds2.append(myResult_ICP[5])
-		    myLocalGnuCmds2.append(myResult_ICP[8])
-		    myLocalGnuCmds2.append(myResult_ICP[11])
-		  elif myShowCentroid:
-		    myLocalGnuCmds2.append(myResult_ICP[5])
-		    myLocalGnuCmds2.append(myResult_ICP[8])
-		  elif myShowLineFit:
-		    myLocalGnuCmds2.append(myResult_ICP[5])
-		    myLocalGnuCmds2.append(myResult_ICP[9])
-		    myLocalGnuCmds2.append(myResult_ICP[10])
-		    myLocalGnuCmds2.append(myResult_ICP[11])
-		  else:
-		    myLocalGnuCmds2.append(myResult_ICP[2])
-		  
-		  
-		  #second line of graphs
-		  myLocalGnuCmds3.append(myResult_ICP[3])
-		  myLocalGnuCmds3.append(myResult_ICP[4])
-		  myLocalGnuCmds3.append(myResult_ICP[5])
-		  
-		  if myShowCentroid and myShowLineFitTraj:
-		    myLocalGnuCmds3.append(myResult_ICP[8])
-		    myLocalGnuCmds3.append(myResult_ICP[11])
-		  elif myShowICPMatches:
-		    myLocalGnuCmds3.append(myResult_ICP[6])
-		    myLocalGnuCmds3.append(myResult_ICP[7])
-		  else:
-		    if myShowCentroid:
-		      myLocalGnuCmds3.append(myResult_ICP[8])
-		    #else:
-		      #myLocalGnuCmds3.append('\n')
-		    if myShowLineFit:
-		      myLocalGnuCmds3.append(myResult_ICP[9])
-		      myLocalGnuCmds3.append(myResult_ICP[10])
-		      myLocalGnuCmds3.append(myResult_ICP[11])
+		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOMX])
+		  myGnuCmdInitLine2.append('\n')
+		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOMY])
+		  myGnuCmdInitLine2.append('\n')
+		  #Both lines are identical and built on myGnuCmdCore
+		  myIdxTarget=gnuCmdIdx_SUBTRACTED
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_CENTROID])>0 or len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0:
+		      myGnuCmdCore.append(',')
 		    else:
-		      myLocalGnuCmds3.append('\n')
+		      myGnuCmdCore.append('\n')
+		  myIdxTarget=gnuCmdIdx_CENTROID
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0:
+		      myGnuCmdCore.append(',')
+		    else:
+		      myGnuCmdCore.append('\n')
+		  myIdxTarget=gnuCmdIdx_LINE_FITS
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0:
+		      myGnuCmdCore.append(',')
+		    else:
+		      myGnuCmdCore.append('\n')
+		  myIdxTarget=gnuCmdIdx_BOX_TRAJ
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0:
+		      myGnuCmdCore.append(',')
+		    else:
+		      myGnuCmdCore.append('\n')	 
+		  myIdxTarget=gnuCmdIdx_ICP_TRAJ
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0:
+		      myGnuCmdCore.append(',')
+		    else:
+		      myGnuCmdCore.append('\n')
+		  myIdxTarget=gnuCmdIdx_KALMAN
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0:
+		      myGnuCmdCore.append(',')
+		    else:
+		      myGnuCmdCore.append('\n')
+		  myIdxTarget=gnuCmdIdx_BOX
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    myGnuCmdCore.append('\n')
 		else:
 		  myResult_ICP=myICP_Consecutive_MakeEmpty(myQualifiedTopicName)
-		  myLocalGnuCmds2.append(myResult_ICP[0])
-		  myLocalGnuCmds3.append(myResult_ICP[0])
+		  if len(myResult_ICP[gnuCmdIdx_ORIGINAL])>0:
+		    myGnuCmdCore.append(myResult_ICP[gnuCmdIdx_ORIGINAL])
+		    myGnuCmdCore.append('\n')
 		myICP_PreviousDataSet[i]=myLocalLL[i][myStartStep]
 		myFoundAnyPointImage=True
 		#print len(myGnuPlotOutput)
 	      else:
 		#this topic does not have hits, just put empty
-		myResult=myGnu2DCartesianMakeEmpty(myQualifiedTopicName)
-		myLocalGnuCmds.append(myResult[0])
-		myAgregateGnuCmds.append(myResult[1])
-		#use same single empty data in case there is no points
-		myLocalGnuCmds2.append(myResult[0])
-		myResult_ICP=myICP_Consecutive_MakeEmpty(myQualifiedTopicName)
-		myLocalGnuCmds3.append(myResult_ICP[0])
-		myAgregateGnuCmds.append(',')
-		#myAgregatePointList+=myGnu2DCartesianMakeEmpty("/LMS_agregated")
-	      #get a command list for combined graph
-	      #myAgregateGnuCmds+=myGnu2DCartesian(myAgregatePointList,"/LMS_agregated",myDate)
-	      #do not plot anymore the complete picture
-	      #myGnuPlotOutput+=myLocalGnuCmds
-	      #myLocalGnuCmds2 is subtracted image
-	      myGnuPlotOutput+=myLocalGnuCmds2
-	      #myLocalGnuCmds3 is result of ICP algorithm
-	      myGnuPlotOutput2+=myLocalGnuCmds3
-	    #mySend2GnuPlot('plot ')
-	    #Use below for aggregate points
-	    #myGnuPlotOutput+=myAgregateGnuCmds
-	    #myGnuPlotOutput.append('\n')
-
+		if len(myResult_ICP[gnuCmdIdx_ORIGINAL])>0:
+		  myGnuCmdCore.append(myResult[gnuCmdIdx_ORIGINAL])
+		  myGnuCmdCore.append('\n')
+	      myGnuPlotOutput+=myGnuCmdInitLine1
+	      myGnuPlotOutput+=myGnuCmdCore
+	      myGnuPlotOutput2+=myGnuCmdInitLine2
+	      myGnuPlotOutput2+=myGnuCmdCore
 	    #get a plot command for all the points
-
 	    for i in range(0,len(myGnuPlotOutput)):
 	      mySend2GnuPlot(myGnuPlotOutput[i])
 	    for i in range(0,len(myGnuPlotOutput2)):
