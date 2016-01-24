@@ -10,7 +10,7 @@ import datetime
 
 myStopAfter=True
 myStartOffset=10
-myStopAfterSeconds=2
+myStopAfterSeconds=7#2
 myBackGroundSampleIndex=3#target date to extract background features
 myShowCentroid=True#trajectory
 myShowICPPrediction=True#trajectory
@@ -252,53 +252,67 @@ else:
 		  myIdxTarget=gnuCmdIdx_SUBTRACTED
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_CENTROID])>0 or len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]):
+		    if len(myResult_ICP[gnuCmdIdx_CENTROID])>0 or len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
 		      myGnuCmdCore.append(',')
 		    else:
 		      myGnuCmdCore.append('\n')
 		  myIdxTarget=gnuCmdIdx_CENTROID
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]):
+		    if len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
 		      myGnuCmdCore.append(',')
 		    else:
 		      myGnuCmdCore.append('\n')
 		  myIdxTarget=gnuCmdIdx_LINE_FITS
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]):
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
 		      myGnuCmdCore.append(',')
 		    else:
 		      myGnuCmdCore.append('\n')
 		  myIdxTarget=gnuCmdIdx_BOX_TRAJ
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]):
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
 		      myGnuCmdCore.append(',')
 		    else:
 		      myGnuCmdCore.append('\n')	 
 		  myIdxTarget=gnuCmdIdx_ICP_TRAJ
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]):
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
 		      myGnuCmdCore.append(',')
 		    else:
 		      myGnuCmdCore.append('\n')
 		  myIdxTarget=gnuCmdIdx_KALMAN
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]):
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
 		      myGnuCmdCore.append(',')
 		    else:
 		      myGnuCmdCore.append('\n')
 		  myIdxTarget=gnuCmdIdx_ICP_VECTOR
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]):
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
 		      myGnuCmdCore.append(',')
 		    else:
 		      myGnuCmdCore.append('\n')
 		  myIdxTarget=gnuCmdIdx_BOX_VECTOR
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
+		      myGnuCmdCore.append(',')
+		    else:
+		      myGnuCmdCore.append('\n')
+		  myIdxTarget=gnuCmdIdx_ICP_MATCHES
+		  if len(myResult_ICP[myIdxTarget])>0:
+		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
+		      myGnuCmdCore.append(',')
+		    else:
+		      myGnuCmdCore.append('\n')
+		  myIdxTarget=gnuCmdIdx_PREVIOUS
 		  if len(myResult_ICP[myIdxTarget])>0:
 		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
 		    if len(myResult_ICP[gnuCmdIdx_BOX])>0:
@@ -320,7 +334,7 @@ else:
 	      else:
 		#this topic does not have hits, just put empty
 		if len(myResult_ICP[gnuCmdIdx_ORIGINAL])>0:
-		  myGnuCmdCore.append(myResult[gnuCmdIdx_ORIGINAL])
+		  myGnuCmdCore.append(myResult_ICP[gnuCmdIdx_ORIGINAL])
 		  myGnuCmdCore.append('\n')
 	      myGnuPlotOutput+=myGnuCmdInitLine1
 	      myGnuPlotOutput+=myGnuCmdCore

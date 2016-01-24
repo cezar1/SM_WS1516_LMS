@@ -4,7 +4,7 @@ import datetime
 myGnuPlotCmds=[]
 myDebug=False
 mySubtractThreshhold=0.3
-myZoom=0.3
+myZoom=0.2
 myMinX=-1.3
 myMaxX=0
 myMinY=0
@@ -94,8 +94,8 @@ def myCreateDatFileBox_Vector(vVector,vFileName):
   if myVector[0]!=0 and myVector[1]!=0:
     f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myEndPoint[0])+" "+str(myEndPoint[1]))
   f.close()
-def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
-  myDebug=True
+def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations,vFileName):
+  myDebug=False
   #Make an initial pass to calculate the points
   myMatchedOriginal=[]
   myMatchedPrevious=[]
@@ -120,15 +120,27 @@ def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
   myDeltaTranslationX=0
   myDeltaTranslationY=0
   myDeltaTranslationTheta=0
+  myOmega=0
+  f = open(vFileName, 'w')
   if myDebug:print "Have "+str(len(myMatchedPrevious))+" elements in myMatchedPrevious"
-  if len(myMatchedPrevious)>0:
+  if len(myMatchedPrevious)>0 and len(myMatchedOriginal)>0:
     for k in range(0,vIterations):
-      print "Doing iteration ["+str(k+1)+"]."
+      #print "Doing iteration ["+str(k+1)+"]."
       myNewMatchedOrig=[]
       myNewMatchedPrev=[]
       myCurrentPrevious=[]
       #At each iteration apply current results on previous points
       #Calculate centroid
+      myXPrevSum=0
+      myYPrevSum=0
+      myPointsNr=0
+      for j in range(0,len(myMatchedOriginal),2):
+	myXPrevSum+=myMatchedOriginal[j]
+	myYPrevSum+=myMatchedOriginal[j+1]
+	myPointsNr+=1
+      myCentroidOrigX=myXPrevSum/myPointsNr
+      myCentroidOrigY=myYPrevSum/myPointsNr
+      #print "Did centroid on original "+str(myPointsNr)+" points"
       myXPrevSum=0
       myYPrevSum=0
       myPointsNr=0
@@ -138,16 +150,39 @@ def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
 	myPointsNr+=1
       myCentroidX=myXPrevSum/myPointsNr
       myCentroidY=myYPrevSum/myPointsNr
-      print "Did centroid on "+str(myPointsNr)+" points"
+      #print "Did centroid on previous "+str(myPointsNr)+" points"
+      #print "I ["+str(k+1)+"]. Orig ["+str(myCentroidOrigX)+"]["+str(myCentroidOrigY)+"]. Prev1 ["+str(myCentroidX)+"]["+str(myCentroidY)+"]. Delta ["+str(myCentroidOrigX-myCentroidX)+"]["+str(myCentroidOrigY-myCentroidY)+"]"
       myCosine=math.cos(math.radians(myDeltaTranslationTheta))
       mySine=math.sin(math.radians(myDeltaTranslationTheta))
-      print "Theta: ["+str(myDeltaTranslationTheta)+"] deg. Sine: ["+str(mySine)+"].Cosine: ["+str(myCosine)+"]"
+      #print "Theta: ["+str(myTheta)+"] deg. TX: ["+str(myTranslationX)+"].TY: ["+str(myTranslationY)+"]"
+      myCurrentPrevious=[]
       #Apply rotation of previous points around centroid
       for j in range(0,len(myMatchedPrevious),2):
-	myXPrevCurrent=myMatchedPrevious[j]+myTranslationX#math.cos(math.radians(myDeltaTranslationTheta))*myMatchedPrevious(j)+myDeltaTranslationX
-	myYPrevCurrent=myMatchedPrevious[j+1]+myTranslationY#myMatchedPrevious(j)+myDeltaTranslationY
+	#1.apply translation to origin
+	myXPrevCurrent=myMatchedPrevious[j]#-myCentroidX
+	myYPrevCurrent=myMatchedPrevious[j+1]#-myCentroidY
+	#2.rotate in origin
+	myXPrevCurrent2=math.cos(math.radians(myTheta))*myXPrevCurrent-math.sin(math.radians(myTheta))*myYPrevCurrent
+	myYPrevCurrent2=+math.sin(math.radians(myTheta))*myXPrevCurrent+math.cos(math.radians(myTheta))*myYPrevCurrent
+	#3.reapply translation to pivot point
+	myXPrevCurrent=myXPrevCurrent2#+myCentroidX
+	myYPrevCurrent=myYPrevCurrent2#+myCentroidY
+	#4.apply translation from previous step
+	myXPrevCurrent=myXPrevCurrent+myTranslationX#math.cos(math.radians(myDeltaTranslationTheta))*myMatchedPrevious(j)+myDeltaTranslationX
+	myYPrevCurrent=myYPrevCurrent+myTranslationY#myMatchedPrevious(j)+myDeltaTranslationY
 	myCurrentPrevious.append(myXPrevCurrent)
 	myCurrentPrevious.append(myYPrevCurrent)
+      myXPrevSum=0
+      myYPrevSum=0
+      myPointsNr=0
+      for j in range(0,len(myCurrentPrevious),2):
+	myXPrevSum+=myCurrentPrevious[j]
+	myYPrevSum+=myCurrentPrevious[j+1]
+	myPointsNr+=1
+      myCentroidPrev2X=myXPrevSum/myPointsNr
+      myCentroidPrev2Y=myYPrevSum/myPointsNr
+      #print "Did centroid on previous "+str(myPointsNr)+" points, after applying partial T&R"
+      #print "I ["+str(k+1)+"]. Orig ["+str(myCentroidOrigX)+"]["+str(myCentroidOrigY)+"]. Prev2 ["+str(myCentroidPrev2X)+"]["+str(myCentroidPrev2Y)+"]. Delta ["+str(myCentroidOrigX-myCentroidPrev2X)+"]["+str(myCentroidOrigY-myCentroidPrev2Y)+"]"
       #Make matching
       for i in range(0,len(myMatchedOriginal),2):
 	myDist=0.05
@@ -174,7 +209,7 @@ def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
 	myNewMatchedOrigSumY=0
 	myNewMatchedPrevSumX=0
 	myNewMatchedPrevSumY=0
-	print "Iteration ["+str(k+1)+"]. Matched ["+str(len(myNewMatchedOrig)/2)+"] from ["+str(len(myMatchedOriginal)/2)+"] points. Ratio ["+str(len(myNewMatchedOrig)*100/len(myMatchedOriginal))+"%]"
+	#print "Iteration ["+str(k+1)+"]. Matched ["+str(len(myNewMatchedOrig)/2)+"] from ["+str(len(myMatchedOriginal)/2)+"] points. Ratio ["+str(len(myNewMatchedOrig)*100/len(myMatchedOriginal))+"%]"
 	for i in range(0,len(myNewMatchedOrig),2):
 	  myNewMatchedOrigSumX+=myNewMatchedOrig[i]
 	  myNewMatchedOrigSumY+=myNewMatchedOrig[i+1]
@@ -185,30 +220,68 @@ def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
 	myNewMatchedOrigCentroidY=myNewMatchedOrigSumY/myMatchedPairs
 	myNewMatchedPrevCentroidX=myNewMatchedPrevSumX/myMatchedPairs
 	myNewMatchedPrevCentroidY=myNewMatchedPrevSumY/myMatchedPairs
-	print "Original matched centroid X ["+str(myNewMatchedOrigCentroidX)+"] Y["+str(myNewMatchedOrigCentroidY)+"]"
-	print "Previous matched centroid X ["+str(myNewMatchedPrevCentroidX)+"] Y["+str(myNewMatchedPrevCentroidY)+"]"
+	#print "Original matched centroid X ["+str(myNewMatchedOrigCentroidX)+"] Y["+str(myNewMatchedOrigCentroidY)+"]"
+	#print "Previous matched centroid X ["+str(myNewMatchedPrevCentroidX)+"] Y["+str(myNewMatchedPrevCentroidY)+"]"
+	#print "Delta centroid X ["+str(myNewMatchedPrevCentroidX-myNewMatchedOrigCentroidX)+"] Y ["+str(myNewMatchedPrevCentroidY-myNewMatchedOrigCentroidY)+"]"
 	#Make actual ICP calculation of TX,TY,T_theta
-	math.atan2(-(myY-myYPrev),(myX-myXPrev))
-	#xo - x original
-	#xp - x previous (updated each iteration)
-	#yo - y original
-	#yp - y previous (updated each iteration)
-	mySxoyp=0
-	mySyoxp=0
-	mySxoxp=0
-	mySyoyp=0
-	for i in range(0,len(myNewMatchedOrig),2):
-	  mySxoxp+=(myNewMatchedOrig[i]-myNewMatchedOrigCentroidX)*(myNewMatchedPrev[i]-myNewMatchedPrevCentroidX)
-	  mySxoyp+=(myNewMatchedOrig[i]-myNewMatchedOrigCentroidX)*(myNewMatchedPrev[i+1]-myNewMatchedPrevCentroidY)
-	  mySyoxp+=(myNewMatchedOrig[i+1]-myNewMatchedOrigCentroidY)*(myNewMatchedPrev[i]-myNewMatchedPrevCentroidX)
-	  mySyoyp+=(myNewMatchedOrig[i+1]-myNewMatchedOrigCentroidY)*(myNewMatchedPrev[i+1]-myNewMatchedPrevCentroidY)
-	myOmega=math.atan2(mySxoyp-mySyoxp,mySxoxp+mySyoyp)
-	myOmega=math.degrees(myOmega)
-	myTX=myNewMatchedPrevCentroidX-(myNewMatchedOrigCentroidX*math.cos(math.radians(myOmega))-myNewMatchedOrigCentroidY*math.sin(math.radians(myOmega)))
-	myTY=myNewMatchedPrevCentroidY-(myNewMatchedOrigCentroidX*math.sin(math.radians(myOmega))+myNewMatchedOrigCentroidY*math.cos(math.radians(myOmega)))
-	myTranslationX+=myTX
-	myTranslationY+=myTY
-	print "Omega ["+str(myOmega)+"] TX ["+str(myTX)+"] TY ["+str(myTY)+"]"
+	#First check if enough pairs are matched, otherwise abort calculation
+	if myMatchedPairs<20:
+	  myAbortICP=True
+	else:
+	  myAbortICP=False
+	if not myAbortICP:
+	  math.atan2(-(myY-myYPrev),(myX-myXPrev))
+	  #xo - x original
+	  #xp - x previous (updated each iteration)
+	  #yo - y original
+	  #yp - y previous (updated each iteration)
+	  mySxoyp=0
+	  mySyoxp=0
+	  mySxoxp=0
+	  mySyoyp=0
+	  for i in range(0,len(myNewMatchedOrig),2):
+	    mySxoxp+=(myNewMatchedOrig[i]-myNewMatchedOrigCentroidX)*(myNewMatchedPrev[i]-myNewMatchedPrevCentroidX)
+	    mySxoyp+=(myNewMatchedOrig[i]-myNewMatchedOrigCentroidX)*(myNewMatchedPrev[i+1]-myNewMatchedPrevCentroidY)
+	    mySyoxp+=(myNewMatchedOrig[i+1]-myNewMatchedOrigCentroidY)*(myNewMatchedPrev[i]-myNewMatchedPrevCentroidX)
+	    mySyoyp+=(myNewMatchedOrig[i+1]-myNewMatchedOrigCentroidY)*(myNewMatchedPrev[i+1]-myNewMatchedPrevCentroidY)
+	  myOmega=math.atan2(mySxoyp-mySyoxp,mySxoxp+mySyoyp)
+	  myOmega=math.degrees(myOmega)#+90
+	  myTheta=-myOmega
+	  myTX=myNewMatchedPrevCentroidX-(myNewMatchedOrigCentroidX*math.cos(math.radians(myOmega))-myNewMatchedOrigCentroidY*math.sin(math.radians(myOmega)))
+	  myTY=myNewMatchedPrevCentroidY-(myNewMatchedOrigCentroidX*math.sin(math.radians(myOmega))+myNewMatchedOrigCentroidY*math.cos(math.radians(myOmega)))
+	  myTranslationX=-myTX
+	  myTranslationY=-myTY
+	  #print "Omega ["+str(myOmega)+"] deltaTX ["+str(myTX)+"] deltaTY ["+str(myTY)+"]"
+	  #print "Theta ["+str(myTheta)+"] TX ["+str(myTranslationX)+"] TY ["+str(myTranslationY)+"]"
+	  #For drawing only, at end of first iteration
+	  if k==vIterations-1:
+	    myCurrentPrevious=[]
+	    #Apply rotation of previous points around centroid
+	    #myTheta=90
+	    #myTranslationX=0.05
+	    #myTranslationY=0.05
+	    for j in range(0,len(myNewMatchedOrig),2):
+	      #1.apply translation to origin
+	      myXPrevCurrent=myNewMatchedOrig[j]#-myNewMatchedOrigCentroidX
+	      myYPrevCurrent=myNewMatchedOrig[j+1]#-myNewMatchedOrigCentroidY
+	      #2.rotate in origin
+	      myXPrevCurrent2=math.cos(math.radians(myTheta))*myXPrevCurrent-math.sin(math.radians(myTheta))*myYPrevCurrent
+	      myYPrevCurrent2=math.sin(math.radians(myTheta))*myXPrevCurrent+math.cos(math.radians(myTheta))*myYPrevCurrent
+	      #3.reapply translation to pivot point
+	      #myXPrevCurrent=myXPrevCurrent2+myNewMatchedOrigCentroidX
+	      #myYPrevCurrent=myYPrevCurrent2+myNewMatchedOrigCentroidY
+	      #4.apply translation from previous step
+	      myXPrevCurrent=myXPrevCurrent+myTranslationX#math.cos(math.radians(myDeltaTranslationTheta))*myMatchedPrevious(j)+myDeltaTranslationX
+	      myYPrevCurrent=myYPrevCurrent+myTranslationY#myMatchedPrevious(j)+myDeltaTranslationY
+	      myCurrentPrevious.append(myXPrevCurrent)
+	      myCurrentPrevious.append(myYPrevCurrent)
+	    #Draw myCurrentPrevious only for first iteration
+	    for j in range(0,len(myNewMatchedOrig),2):
+	      f.write(str(myNewMatchedOrig[j])+" "+str(myNewMatchedOrig[j+1])+"\n"+str(myCurrentPrevious[j])+" "+str(myCurrentPrevious[j+1])+"\n\n")
+	  
+	#else:
+	  #print "ICP aborted due to not enough matches found on filename ["+str(vFileName)+"]."
+	  #print "Theta ["+str(myTheta)+"] TX ["+str(myTranslationX)+"] TY ["+str(myTranslationY)+"]"
       else:
 	#No matches found
 	print "No matches found. Aborting"
@@ -233,10 +306,15 @@ def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations):
     #if myFound:
       #myMatchedOriginal.append(myX)
       #myMatchedOriginal.append(myY)
+  f.close()
   myResult=[]
+  if math.fabs(myTranslationX)>0.5 or math.fabs(myTranslationY)>0.5:
+    print "EXCEED: Theta ["+str(myTheta)+"] TX ["+str(myTranslationX)+"] TY ["+str(myTranslationY)+"] vFileName ["+str(vFileName)+"]"
   myResult.append(myTranslationX)#X translation
   myResult.append(myTranslationY)#Y translation
   myResult.append(myTheta)#rotation
+  #myResult.append(myNewMatchedOrigCentroidX)#pivot point X
+  #myResult.append(myNewMatchedOrigCentroidY)#pivot point Y
   return myResult
 def myCreateDatFileICP(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotate,dataSeriesPrevious):
   global myDebug
@@ -384,7 +462,7 @@ def myCreateDatFileBoxRectangle(vLineFits,vFileName):
   myAngle=math.atan2(myLineFitCenterY-myLineFitFarCornerY,myLineFitCenterX-myLineFitFarCornerX)
   myAngle=math.degrees(myAngle)+180
   myLineFitCenter.append(myAngle)
-  print "Box slope is ["+str(myAngle)+"]"
+  #print "Box slope is ["+str(myAngle)+"]"
   #myLineFitCenter.append(xm1)
   #myLineFitCenter.append(ym1)
   
@@ -554,11 +632,14 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTranslateX=0.0
   myTranslateY=0.0
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_iterations.dat'
-  myCreateDatFileICP(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
-  myICP_Centroid=myApplyICP(dataSeriesSub,dataSeriesPrevSub,3)
+  #myCreateDatFileICP(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
+  myICP_Centroid=myApplyICP(dataSeriesSub,dataSeriesPrevSub,5,myTargetFilename)
+	    
+	    
   vICP_Pose[0]+=myICP_Centroid[0]
   vICP_Pose[1]+=myICP_Centroid[1]
-  print "myICP center has "+str(len(myICP_Centroid))
+  vICP_Pose[2]+=myICP_Centroid[2]
+  #print "myICP center has "+str(len(myICP_Centroid))
   #5
   myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "blue" title "matches" with line')
   #centroid
