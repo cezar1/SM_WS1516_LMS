@@ -23,20 +23,23 @@ myICPIterations=3#how many iterations to run the ICP
 gnuCmdIdx_ORIGINAL=0
 gnuCmdIdx_ROTATED=1
 gnuCmdIdx_SUBTRACTED=2
-gnuCmdIdx_ZOOMX=3
-gnuCmdIdx_ZOOMY=4
-gnuCmdIdx_SUBTRACTED2=5
-gnuCmdIdx_PREVIOUS=6
-gnuCmdIdx_ICP_MATCHES=7
-gnuCmdIdx_CENTROID=8
-gnuCmdIdx_LINE_FITS=9
-gnuCmdIdx_BOX=10
-gnuCmdIdx_BOX_TRAJ=11
-gnuCmdIdx_ICP_TRAJ=12
-gnuCmdIdx_KALMAN=13
-gnuCmdIdx_ICP_VECTOR=14
-gnuCmdIdx_BOX_VECTOR=15
-gnuCmdIdx_KALMAN_VECTOR=16
+gnuCmdIdx_ZOOM1X=3
+gnuCmdIdx_ZOOM1Y=4
+gnuCmdIdx_ZOOM2X=5
+gnuCmdIdx_ZOOM2Y=6
+gnuCmdIdx_SUBTRACTED2=7
+gnuCmdIdx_PREVIOUS=8
+gnuCmdIdx_ICP_MATCHES=9
+gnuCmdIdx_CENTROID=10
+gnuCmdIdx_LINE_FITS=11
+gnuCmdIdx_BOX=12
+gnuCmdIdx_BOX_TRAJ=13
+gnuCmdIdx_ICP_TRAJ=14
+gnuCmdIdx_KALMAN=15
+gnuCmdIdx_ICP_VECTOR=16
+gnuCmdIdx_BOX_VECTOR=17
+gnuCmdIdx_KALMAN_VECTOR=18
+gnuCmdIdx_LAST=18
 
 def mySend2GnuPlot(vCmd):
   #print vCmd
@@ -228,6 +231,7 @@ else:
 	      #print str(len(myLocalLL[i]))+">="+str(myStartStep)
 	      myQualifiedTopicName=myTopicsNames[i]+"_"+str(myDate)+"_"+str(myStartStep)
 	      myGnuCmdCore=[]
+	      myGnuCmdCoreLine1=[]
 	      myGnuCmdInitLine1=[]
 	      myGnuCmdInitLine2=[]
 	      myLocalZoom=[]
@@ -240,7 +244,7 @@ else:
 		#myGnuCmdCore.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 		myGnuCmdInitLine1.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+' with background '+str(myDateTimeObjBack.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 		if myShowICPPrediction and myShowCentroid and myShowLineFitTraj:
-		  myGnuCmdInitLine2.append('set title "Centroid (over subtracted), ICP prediction with ['+str(myICPIterations)+'] iterations and ['+str(myHistoryCapacity)+'] steps over, box fitting and Kalman from ICP and box fit"\n')
+		  myGnuCmdInitLine2.append('set title "ICP prediction with ['+str(myICPIterations)+'] iterations and ['+str(myHistoryCapacity)+'] steps over, box fitting and Kalman fuse from ICP and box fit (+ICP reset from box) "\n')
 		elif myShowCentroid and myShowLineFitTraj:
 		  myGnuCmdInitLine2.append('set title "Centroid and line fitting"\n')
 		elif myShowCentroid:
@@ -254,90 +258,188 @@ else:
 	      if len(myLocalLL[i])>=myStartStep+1:   
 		if len(myICP_PreviousDataSet[i])>0:
 		  myResult_ICP=myICP_Consecutive(myLocalLL[i][myStartStep],myICP_PreviousDataSet[i],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i],myICP_Pose[i],myICP_Initialized[i],myICP_PreviousHistory[i],myHistoryCapacity,myHavePreviousUpTo[i],myICPIterations,myKalmanData[i])
-		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOMX])
+		  #myIdxTarget=gnuCmdIdx_SUBTRACTED 
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCoreLine1.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR])>0:
+		      #myGnuCmdCoreLine1.append(',')
+		    #else:
+		      #myGnuCmdCoreLine1.append('\n')
+		  #myIdxTarget=gnuCmdIdx_KALMAN_VECTOR
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCoreLine1.append(myResult_ICP[myIdxTarget])
+		    #myGnuCmdCoreLine1.append('\n')
+		  myGnuCmdInitLine1.append(myResult_ICP[gnuCmdIdx_ZOOM1X])
+		  myGnuCmdInitLine1.append('\n')
+		  myGnuCmdInitLine1.append(myResult_ICP[gnuCmdIdx_ZOOM1Y])
+		  myGnuCmdInitLine1.append('\n')
+		  
+		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOM2X])
 		  myGnuCmdInitLine2.append('\n')
-		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOMY])
+		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOM2Y])
 		  myGnuCmdInitLine2.append('\n')
 		  #Both lines are identical and built on myGnuCmdCore
-		  myIdxTarget=gnuCmdIdx_SUBTRACTED
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_CENTROID])>0 or len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_CENTROID
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_LINE_FITS
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_BOX_TRAJ
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')	 
-		  myIdxTarget=gnuCmdIdx_ICP_TRAJ
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_KALMAN
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_ICP_VECTOR
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_BOX_VECTOR
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_ICP_MATCHES
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_PREVIOUS]):
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_PREVIOUS
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    if len(myResult_ICP[gnuCmdIdx_BOX])>0:
-		      myGnuCmdCore.append(',')
-		    else:
-		      myGnuCmdCore.append('\n')
-		  myIdxTarget=gnuCmdIdx_BOX
-		  if len(myResult_ICP[myIdxTarget])>0:
-		    myGnuCmdCore.append(myResult_ICP[myIdxTarget])
-		    myGnuCmdCore.append('\n')
+		  #LINE 1
+		  myGnuCmdLocalObj=[] 
+		  myGnuCmdShow=[myN for myN in range(gnuCmdIdx_LAST+1)]
+		  myGnuCmdShow[gnuCmdIdx_ORIGINAL]=False
+		  myGnuCmdShow[gnuCmdIdx_ROTATED]=False
+		  myGnuCmdShow[gnuCmdIdx_SUBTRACTED]=True
+		  myGnuCmdShow[gnuCmdIdx_ZOOM1X]=False
+		  myGnuCmdShow[gnuCmdIdx_ZOOM1Y]=False
+		  myGnuCmdShow[gnuCmdIdx_ZOOM2X]=False
+		  myGnuCmdShow[gnuCmdIdx_ZOOM2Y]=False
+		  myGnuCmdShow[gnuCmdIdx_SUBTRACTED2]=False
+		  myGnuCmdShow[gnuCmdIdx_PREVIOUS]=False
+		  myGnuCmdShow[gnuCmdIdx_ICP_MATCHES]=False
+		  myGnuCmdShow[gnuCmdIdx_CENTROID]=False
+		  myGnuCmdShow[gnuCmdIdx_LINE_FITS]=False
+		  myGnuCmdShow[gnuCmdIdx_BOX]=False
+		  myGnuCmdShow[gnuCmdIdx_BOX_TRAJ]=True
+		  myGnuCmdShow[gnuCmdIdx_ICP_TRAJ]=True
+		  myGnuCmdShow[gnuCmdIdx_KALMAN]=True
+		  myGnuCmdShow[gnuCmdIdx_ICP_VECTOR]=True
+		  myGnuCmdShow[gnuCmdIdx_BOX_VECTOR]=False
+		  myGnuCmdShow[gnuCmdIdx_KALMAN_VECTOR]=True
+		  for myGnuCmdTarget in range (0,gnuCmdIdx_LAST+1):
+		    myKeepComma=False
+		    for myGnuCmdParse in range (myGnuCmdTarget+1,gnuCmdIdx_LAST+1):
+		      if myGnuCmdShow[myGnuCmdParse]:
+			myKeepComma=True
+			#print "myKeepComma TRUE"
+			break
+		    if myGnuCmdShow[myGnuCmdTarget] and len(myResult_ICP[myGnuCmdTarget])>0:
+		      myGnuCmdLocalObj.append(myResult_ICP[myGnuCmdTarget])
+		      if myKeepComma:
+			myGnuCmdLocalObj.append(',')
+		      else:
+			myGnuCmdLocalObj.append('\n')
+		  myGnuCmdCoreLine1=myGnuCmdLocalObj
+		  #LINE 2
+		  myGnuCmdLocalObj=[] 
+		  myGnuCmdShow=[myN for myN in range(gnuCmdIdx_LAST+1)]
+		  myGnuCmdShow[gnuCmdIdx_ORIGINAL]=False
+		  myGnuCmdShow[gnuCmdIdx_ROTATED]=False
+		  myGnuCmdShow[gnuCmdIdx_SUBTRACTED]=True
+		  myGnuCmdShow[gnuCmdIdx_ZOOM1X]=False
+		  myGnuCmdShow[gnuCmdIdx_ZOOM1Y]=False
+		  myGnuCmdShow[gnuCmdIdx_ZOOM2X]=False
+		  myGnuCmdShow[gnuCmdIdx_ZOOM2Y]=False
+		  myGnuCmdShow[gnuCmdIdx_SUBTRACTED2]=False
+		  myGnuCmdShow[gnuCmdIdx_PREVIOUS]=True
+		  myGnuCmdShow[gnuCmdIdx_ICP_MATCHES]=True
+		  myGnuCmdShow[gnuCmdIdx_CENTROID]=False
+		  myGnuCmdShow[gnuCmdIdx_LINE_FITS]=True
+		  myGnuCmdShow[gnuCmdIdx_BOX]=False
+		  myGnuCmdShow[gnuCmdIdx_BOX_TRAJ]=False
+		  myGnuCmdShow[gnuCmdIdx_ICP_TRAJ]=False
+		  myGnuCmdShow[gnuCmdIdx_KALMAN]=False
+		  myGnuCmdShow[gnuCmdIdx_ICP_VECTOR]=True
+		  myGnuCmdShow[gnuCmdIdx_BOX_VECTOR]=True
+		  myGnuCmdShow[gnuCmdIdx_KALMAN_VECTOR]=True
+		  for myGnuCmdTarget in range (0,gnuCmdIdx_LAST+1):
+		    myKeepComma=False
+		    for myGnuCmdParse in range (myGnuCmdTarget+1,gnuCmdIdx_LAST+1):
+		      if myGnuCmdShow[myGnuCmdParse]:
+			myKeepComma=True
+			#print "myKeepComma TRUE"
+			break
+		    if myGnuCmdShow[myGnuCmdTarget] and len(myResult_ICP[myGnuCmdTarget])>0:
+		      myGnuCmdLocalObj.append(myResult_ICP[myGnuCmdTarget])
+		      if myKeepComma:
+			myGnuCmdLocalObj.append(',')
+		      else:
+			myGnuCmdLocalObj.append('\n')
+		  myGnuCmdCore=myGnuCmdLocalObj
+		  
+		  #myIdxTarget=gnuCmdIdx_SUBTRACTED
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_CENTROID])>0 or len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_CENTROID
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_LINE_FITS])>0 or len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_LINE_FITS
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_BOX_TRAJ
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_TRAJ])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')	 
+		  #myIdxTarget=gnuCmdIdx_ICP_TRAJ
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_KALMAN
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_VECTOR])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_ICP_VECTOR
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_BOX_VECTOR]) or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_BOX_VECTOR
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_ICP_MATCHES]) or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_ICP_MATCHES
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_PREVIOUS]) or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_PREVIOUS
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0 or len(myResult_ICP[gnuCmdIdx_KALMAN_VECTOR]):
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_KALMAN_VECTOR
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #if len(myResult_ICP[gnuCmdIdx_BOX])>0:
+		      #myGnuCmdCore.append(',')
+		    #else:
+		      #myGnuCmdCore.append('\n')
+		  #myIdxTarget=gnuCmdIdx_BOX
+		  #if len(myResult_ICP[myIdxTarget])>0:
+		    #myGnuCmdCore.append(myResult_ICP[myIdxTarget])
+		    #myGnuCmdCore.append('\n')
 		else:
 		  myResult_ICP=myICP_Consecutive_MakeEmpty(myQualifiedTopicName)
 		  if len(myResult_ICP[gnuCmdIdx_ORIGINAL])>0:
 		    myGnuCmdCore.append(myResult_ICP[gnuCmdIdx_ORIGINAL])
 		    myGnuCmdCore.append('\n')
+		    myGnuCmdCoreLine1.append(myResult_ICP[gnuCmdIdx_ORIGINAL])
+		    myGnuCmdCoreLine1.append('\n')
 		myICP_PreviousDataSet[i]=myLocalLL[i][myStartStep]
 		myFoundAnyPointImage=True
 		#print len(myGnuPlotOutput)
@@ -346,8 +448,11 @@ else:
 		if len(myResult_ICP[gnuCmdIdx_ORIGINAL])>0:
 		  myGnuCmdCore.append(myResult_ICP[gnuCmdIdx_ORIGINAL])
 		  myGnuCmdCore.append('\n')
+		  myGnuCmdCoreLine1.append(myResult_ICP[gnuCmdIdx_ORIGINAL])
+		  myGnuCmdCoreLine1.append('\n')
+		  
 	      myGnuPlotOutput+=myGnuCmdInitLine1
-	      myGnuPlotOutput+=myGnuCmdCore
+	      myGnuPlotOutput+=myGnuCmdCoreLine1
 	      myGnuPlotOutput2+=myGnuCmdInitLine2
 	      myGnuPlotOutput2+=myGnuCmdCore
 	    #get a plot command for all the points

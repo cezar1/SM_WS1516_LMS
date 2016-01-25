@@ -9,6 +9,12 @@ myMinX=-1.3
 myMaxX=0
 myMinY=0
 myMaxY=1
+myBoxLength=0.5
+myBoxWidth=0.5
+myCustomRangeXStart=-1.5
+myCustomRangeXEnd=0
+myCustomRangeYStart=0
+myCustomRangeYEnd=1.5
 cPoseVectorLength=0.25
 
 def myOutput(vMessage):
@@ -93,6 +99,49 @@ def myCreateDatFileBox_Vector(vVector,vFileName):
   myEndPoint.append(myVector[1]+myVector[3]*math.sin(math.radians(myVector[2])))
   if myVector[0]!=0 and myVector[1]!=0:
     f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myEndPoint[0])+" "+str(myEndPoint[1]))
+  f.close()
+def myCreateDatFileKalman_Vector(vVector,vFileName):
+  myVector=[]
+  myVector.append(vVector[0])#X origin
+  myVector.append(vVector[1])#Y origin
+  myVector.append(vVector[2])#theta
+  myVector.append(vVector[3])#length
+  f = open(vFileName, 'w')
+  #calculate end point from theta and length
+  myEndPoint=[]
+  myEndPoint.append(myVector[0]+myVector[3]*math.cos(math.radians(myVector[2])))
+  myEndPoint.append(myVector[1]+myVector[3]*math.sin(math.radians(myVector[2])))
+  #if myVector[0]!=0 and myVector[1]!=0:
+  #print str(myVector[0])+" "+str(myVector[1])+"\n"+str(myEndPoint[0])+" "+str(myEndPoint[1])
+  #f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myEndPoint[0])+" "+str(myEndPoint[1])+"\n")
+  myAlpha=math.degrees(math.atan2(myBoxWidth,myBoxLength))
+  #print myAlpha
+  #myAlpha=45
+  myBoxPoint2=[]
+  #myAlpha=90
+  #myBoxPoint2.append(myVector[0]+myBoxLength*math.cos(math.radians(myVector[2]+myAlpha)))
+  #myBoxPoint2.append(myVector[1]+myBoxLength*math.sin(math.radians(myVector[2]+myAlpha)))
+  #myAlpha=90
+  myBoxPoint2.append(myVector[0]+myBoxLength*math.cos(math.radians(myVector[2]+myAlpha)))
+  myBoxPoint2.append(myVector[1]+myBoxLength*math.sin(math.radians(myVector[2]+myAlpha)))  
+  
+  myBoxPoint1=[]
+  #myBoxPoint1.append(myVector[0]+myBoxWidth*math.cos(math.radians(myVector[2]-(90-myAlpha))))
+  #myBoxPoint1.append(myVector[1]+myBoxWidth*math.sin(math.radians(myVector[2]-(90-myAlpha))))
+  myBoxPoint1.append(myVector[0]+myBoxWidth*math.cos(math.radians(myVector[2]-(90-myAlpha))))
+  myBoxPoint1.append(myVector[1]+myBoxWidth*math.sin(math.radians(myVector[2]-(90-myAlpha))))
+  
+  myBoxDiagonal=math.sqrt(myBoxLength*myBoxLength+myBoxWidth*myBoxWidth)
+  #print "Length ["+str(myBoxLength)+"] Width ["+str(myBoxWidth)+"] Diagonal ["+str(myBoxDiagonal)+"]"
+  myBoxFarCorner=[]
+  myBoxFarCorner.append(myVector[0]+myBoxDiagonal*math.cos(math.radians(myVector[2])))
+  myBoxFarCorner.append(myVector[1]+myBoxDiagonal*math.sin(math.radians(myVector[2])))
+
+  f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myEndPoint[0])+" "+str(myEndPoint[1])+"\n\n")
+  f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myBoxPoint1[0])+" "+str(myBoxPoint1[1])+"\n\n")
+  f.write(str(myVector[0])+" "+str(myVector[1])+"\n"+str(myBoxPoint2[0])+" "+str(myBoxPoint2[1])+"\n\n")
+  f.write(str(myBoxPoint1[0])+" "+str(myBoxPoint1[1])+"\n"+str(myBoxFarCorner[0])+" "+str(myBoxFarCorner[1])+"\n\n")
+  f.write(str(myBoxFarCorner[0])+" "+str(myBoxFarCorner[1])+"\n"+str(myBoxPoint2[0])+" "+str(myBoxPoint2[1])+"\n\n")
   f.close()
 def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations,vFileName):
   myDebug=False
@@ -577,12 +626,21 @@ def myCreateDatFileSample(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotat
       #if myDebug:print "Angle "+str(float(dataSeriesRaw[i])/2)+" range "+str(dataSeriesRaw[i+1])+"=> X ["+str(myX)+"] Y ["+str(myY)+"]"
       f.write(str(myX)+" "+str(myY)+"\n")
   f.close()
-def myComputeKalman(vCentroidAvailable,vICPAvailable,vBoxAvailable,vCentroid_Pose,vICP_Pose,vBOX_Pose,vKalmanData,qKalmanPose):
+def myComputeKalman(vCentroidAvailable,vICPAvailable,vBoxAvailable,vCentroid_Pose,vICP_Pose,vICP_Shift,vBOX_Pose,vKalmanData,qKalmanPose):
+  if vICPAvailable:
+    #Feed ICP result into kalman
+    qKalmanPose[0]+=vICP_Shift[0]
+    qKalmanPose[1]+=vICP_Shift[1]
+    qKalmanPose[2]+=vICP_Shift[2]
   if vBoxAvailable:
     #Fix ICP pose to box
     vICP_Pose[0]=vBOX_Pose[2]
     vICP_Pose[1]=vBOX_Pose[3]
     vICP_Pose[2]=vBOX_Pose[4]
+    #Fix Kalman pose to box corner and orientation to box orientation
+    qKalmanPose[0]=vBOX_Pose[2]
+    qKalmanPose[1]=vBOX_Pose[3]
+    qKalmanPose[2]=vBOX_Pose[4]
     
 def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTopicPose,dataSeriesBackGround,vICP_Pose,vICP_Initialized,vICP_PreviousHistory,vHistoryNumber,vHavePreviousUpTo,vICPIterations,vKalmanData):
   
@@ -616,10 +674,18 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   dataSeriesPrevSub=myFilterRange(dataSeriesPrevSub1)
   
   if len(vICP_PreviousHistory)==0:
-    #print "Initializing history.."
+    qKalmanPose=[]
+    qKalmanPose.append(0)
+    qKalmanPose.append(0)
+    qKalmanPose.append(0)
+    print "Initializing history.."
     for i in range(0,vHistoryNumber):
       #print "Appending element ["+str(i+1)+"]"
       vICP_PreviousHistory.append([])
+    vKalmanData.append(qKalmanPose)
+  else:
+    #print "Loading vKalmanData.. ["+str(len(vKalmanData[0]))+"] elements, ["+str(vKalmanData[0][0])+"] ["+str(vKalmanData[0][1])+"] ["+str(vKalmanData[0][2])+"]"
+    qKalmanPose=vKalmanData[0]
   #Manage history queue
   for i in range(vHistoryNumber-1,0,-1):
     #push queue
@@ -637,6 +703,8 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     vICP_Pose[0]=myCentroid[0]
   if vICP_Pose[1]==0:
     vICP_Pose[1]=myCentroid[1]
+  myGnuPlotCmds.append('set xrange ['+str(myCustomRangeXStart)+':'+str(myCustomRangeXEnd)+']')
+  myGnuPlotCmds.append('set yrange ['+str(myCustomRangeYStart)+':'+str(myCustomRangeYEnd)+']')
   myGnuPlotCmds.append('set xrange ['+str(myCentroid[0]-myZoom)+':'+str(myCentroid[0]+myZoom)+']')
   myGnuPlotCmds.append('set yrange ['+str(myCentroid[1]-myZoom)+':'+str(myCentroid[1]+myZoom)+']')
   #3 actual position
@@ -713,6 +781,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myLineFitCenter=myCreateDatFileBoxRectangle(myLineFits,myTargetFilename)
     if vICP_Initialized[0]==0:
       vICP_Pose[2]=myLineFitCenter[4]
+      qKalmanPose[2]=myLineFitCenter[4]
       vICP_Initialized[0]=1
     myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "black" linewidth 3 title "box"')
     #trajectory of box center
@@ -731,10 +800,11 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myCreateDatFileTrajectoryNoLineFits(myLineFitTrajFilename,myTargetFilename)
     myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line')
   
-  qKalmanPose=[]
+  
   if myBoxAvailable==False:
     myLineFitCenter=[]
-  myComputeKalman(True,myICPAvailable,myBoxAvailable,myCentroid,vICP_Pose,myLineFitCenter,vKalmanData,qKalmanPose)
+  myComputeKalman(True,myICPAvailable,myBoxAvailable,myCentroid,vICP_Pose,myICP_Centroid,myLineFitCenter,vKalmanData,qKalmanPose)
+  vKalmanData[0]=qKalmanPose
   #if myDebug:
   #print "myICP_Consecutive has "+str(len(myGnuPlotCmds))+" elements"
   #ICP trajectory
@@ -754,30 +824,21 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_kalman_trajectory_local.dat'
   myKalman_Result=[]
   if myCentroid[0]!=0:
-    myKalman_Result.append(myCentroid[0]-0.05)
-    myKalman_Result.append(myCentroid[1]-0.05)
+    myKalman_Result.append(qKalmanPose[0])
+    myKalman_Result.append(qKalmanPose[1])
   else:
     myKalman_Result.append(0)
     myKalman_Result.append(0)
   myCreateDatFileKalman_TRAJ(myICP_KALMAN_TargetFilename,myTargetFilename,myKalman_Result)
-  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#994C00" linewidth 3 title "Kalman output" with line')
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#222222" linewidth 3 title "Kalman trajectory" with line')
   
   #ICP result vector
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_vector.dat'
   myICP_Vector=[]
-  if myCentroid[0]!=0:
-    #vICP_Pose[0]+=0.05
-    #vICP_Pose[1]+=0.05
-    #vICP_Pose[2]+=10
-    myICP_Vector.append(vICP_Pose[0])
-    myICP_Vector.append(vICP_Pose[1])
-    myICP_Vector.append(vICP_Pose[2])
-    myICP_Vector.append(cPoseVectorLength)
-  else:
-    myICP_Vector.append(0)
-    myICP_Vector.append(0)
-    myICP_Vector.append(45)
-    myICP_Vector.append(0.15)
+  myICP_Vector.append(vICP_Pose[0]+0.01)
+  myICP_Vector.append(vICP_Pose[1]+0.01)
+  myICP_Vector.append(vICP_Pose[2])
+  myICP_Vector.append(cPoseVectorLength)
   myCreateDatFileICP_Vector(myICP_Vector,myTargetFilename)
   myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#FF6666" linewidth 3 title "ICP pose" with line')
   
@@ -785,8 +846,8 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_box_vector.dat'
   myBox_Vector=[]
   if myBoxAvailable:
-    myBox_Vector.append(myLineFitCenter[2])
-    myBox_Vector.append(myLineFitCenter[3])
+    myBox_Vector.append(myLineFitCenter[2]-0.01)
+    myBox_Vector.append(myLineFitCenter[3]-0.01)
     myBox_Vector.append(myLineFitCenter[4])
     myBox_Vector.append(cPoseVectorLength)
   else:
@@ -796,6 +857,16 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myBox_Vector.append(0)
   myCreateDatFileBox_Vector(myBox_Vector,myTargetFilename)
   myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#3399FF" linewidth 3 title "BOX pose" with line')
+  
+  #Kalman result vector
+  myTargetFilename='dat/output_'+vTopicName[1:]+'_kalman_vector.dat'
+  myKalman_Vector=[]  
+  myKalman_Vector.append(qKalmanPose[0])
+  myKalman_Vector.append(qKalmanPose[1])
+  myKalman_Vector.append(qKalmanPose[2])
+  myKalman_Vector.append(cPoseVectorLength)
+  myCreateDatFileKalman_Vector(myKalman_Vector,myTargetFilename)
+  myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "#CC6600" linewidth 3 title "Kalman pose" with line')
   
   return myGnuPlotCmds
   
