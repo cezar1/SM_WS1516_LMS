@@ -17,6 +17,8 @@ myShowICPPrediction=True#trajectory
 myShowLineFitTraj=True#trajectory
 myShowLineFit=True
 myShowICPMatches=False
+myHistoryCapacity=2#how many steps to run the ICP over
+myICPIterations=3#how many iterations to run the ICP
 
 gnuCmdIdx_ORIGINAL=0
 gnuCmdIdx_ROTATED=1
@@ -80,6 +82,9 @@ else:
       myPointsContainer=[]
       myFirstData2DDone=[]
       myBackGroundLL=[]
+      myICP_PreviousHistory=[]
+      myHavePreviousUpTo=[]
+      myKalmanData=[]
       myMaxRange=0
       #myTopicName="N_A"
       print "Contains "+str(len(lines))+" lines"
@@ -96,6 +101,10 @@ else:
 	    myLocalTopicsPose=[]
 	    myLocalTopicsICP_Pose=[]
 	    myLocalICP_Init=[]
+	    myICP_PreviousHistory.append([])
+	    myLocalHavePreviousUpTo=[]
+	    myLocalHavePreviousUpTo.append(0)
+	    myKalmanData.append([])
 	    for k in range(3,3+3):
 	      #Add translate X,Y, rotation
 	      myLocalTopicsPose.append(str(data[k]))
@@ -104,6 +113,7 @@ else:
 	    myTopicsPose.append(myLocalTopicsPose)
 	    myICP_Pose.append(myLocalTopicsICP_Pose)
 	    myICP_Initialized.append(myLocalICP_Init)
+	    myHavePreviousUpTo.append(myLocalHavePreviousUpTo)
 	  elif str(data[1])=="sum":
 	    if len(myPointsContainer)>0:
 	      myPoints[myTarget].append(myPointsContainer[:])
@@ -230,7 +240,7 @@ else:
 		#myGnuCmdCore.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 		myGnuCmdInitLine1.append('set title "'+str(myDateTimeObj.strftime("%Y-%m-%d %H:%M:%S"))+' with background '+str(myDateTimeObjBack.strftime("%Y-%m-%d %H:%M:%S"))+'"\n')
 		if myShowICPPrediction and myShowCentroid and myShowLineFitTraj:
-		  myGnuCmdInitLine2.append('set title "ICP prediction, Centroid and line fitting"\n')
+		  myGnuCmdInitLine2.append('set title "Centroid (over subtracted), ICP prediction with ['+str(myICPIterations)+'] iterations and ['+str(myHistoryCapacity)+'] steps over, box fitting and Kalman from ICP and box fit"\n')
 		elif myShowCentroid and myShowLineFitTraj:
 		  myGnuCmdInitLine2.append('set title "Centroid and line fitting"\n')
 		elif myShowCentroid:
@@ -243,7 +253,7 @@ else:
 		myGnuCmdInitLine2.append('set title "-"\n')
 	      if len(myLocalLL[i])>=myStartStep+1:   
 		if len(myICP_PreviousDataSet[i])>0:
-		  myResult_ICP=myICP_Consecutive(myLocalLL[i][myStartStep],myICP_PreviousDataSet[i],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i],myICP_Pose[i],myICP_Initialized[i])
+		  myResult_ICP=myICP_Consecutive(myLocalLL[i][myStartStep],myICP_PreviousDataSet[i],myQualifiedTopicName,myDate,myTopicsPose[i],myBackgroundContainer[i],myICP_Pose[i],myICP_Initialized[i],myICP_PreviousHistory[i],myHistoryCapacity,myHavePreviousUpTo[i],myICPIterations,myKalmanData[i])
 		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOMX])
 		  myGnuCmdInitLine2.append('\n')
 		  myGnuCmdInitLine2.append(myResult_ICP[gnuCmdIdx_ZOOMY])

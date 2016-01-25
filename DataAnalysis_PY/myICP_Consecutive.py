@@ -4,7 +4,7 @@ import datetime
 myGnuPlotCmds=[]
 myDebug=False
 mySubtractThreshhold=0.3
-myZoom=0.2
+myZoom=0.5
 myMinX=-1.3
 myMaxX=0
 myMinY=0
@@ -185,7 +185,7 @@ def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations,vFileName):
       #print "I ["+str(k+1)+"]. Orig ["+str(myCentroidOrigX)+"]["+str(myCentroidOrigY)+"]. Prev2 ["+str(myCentroidPrev2X)+"]["+str(myCentroidPrev2Y)+"]. Delta ["+str(myCentroidOrigX-myCentroidPrev2X)+"]["+str(myCentroidOrigY-myCentroidPrev2Y)+"]"
       #Make matching
       for i in range(0,len(myMatchedOriginal),2):
-	myDist=0.05
+	myDist=0.25
 	myX=myMatchedOriginal[i]
 	myY=myMatchedOriginal[i+1]
 	myFound=False
@@ -310,8 +310,8 @@ def myApplyICP(dataSeriesRaw,dataSeriesPrevious,vIterations,vFileName):
   myResult=[]
   if math.fabs(myTranslationX)>0.5 or math.fabs(myTranslationY)>0.5:
     print "EXCEED: Theta ["+str(myTheta)+"] TX ["+str(myTranslationX)+"] TY ["+str(myTranslationY)+"] vFileName ["+str(vFileName)+"]"
-  myResult.append(myTranslationX)#X translation
-  myResult.append(myTranslationY)#Y translation
+  myResult.append(-myTranslationX)#X translation
+  myResult.append(-myTranslationY)#Y translation
   myResult.append(myTheta)#rotation
   #myResult.append(myNewMatchedOrigCentroidX)#pivot point X
   #myResult.append(myNewMatchedOrigCentroidY)#pivot point Y
@@ -577,7 +577,16 @@ def myCreateDatFileSample(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotat
       #if myDebug:print "Angle "+str(float(dataSeriesRaw[i])/2)+" range "+str(dataSeriesRaw[i+1])+"=> X ["+str(myX)+"] Y ["+str(myY)+"]"
       f.write(str(myX)+" "+str(myY)+"\n")
   f.close()
-def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTopicPose,dataSeriesBackGround,vICP_Pose,vICP_Initialized):
+def myComputeKalman(vCentroidAvailable,vICPAvailable,vBoxAvailable,vCentroid_Pose,vICP_Pose,vBOX_Pose,vKalmanData,qKalmanPose):
+  if vBoxAvailable:
+    #Fix ICP pose to box
+    vICP_Pose[0]=vBOX_Pose[2]
+    vICP_Pose[1]=vBOX_Pose[3]
+    vICP_Pose[2]=vBOX_Pose[4]
+    
+def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTopicPose,dataSeriesBackGround,vICP_Pose,vICP_Initialized,vICP_PreviousHistory,vHistoryNumber,vHavePreviousUpTo,vICPIterations,vKalmanData):
+  
+  #process history
   myGnuPlotCmds=[]
   myDebug=False
   #make two passes, one with original coordinates, other with transformations
@@ -605,6 +614,19 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   dataSeriesSub=myFilterRange(dataSeriesSub1)
   dataSeriesPrevSub1=mySubtractBackground(dataSeriesPrevious,dataSeriesBackGround)
   dataSeriesPrevSub=myFilterRange(dataSeriesPrevSub1)
+  
+  if len(vICP_PreviousHistory)==0:
+    #print "Initializing history.."
+    for i in range(0,vHistoryNumber):
+      #print "Appending element ["+str(i+1)+"]"
+      vICP_PreviousHistory.append([])
+  #Manage history queue
+  for i in range(vHistoryNumber-1,0,-1):
+    #push queue
+    vICP_PreviousHistory[i]=vICP_PreviousHistory[i-1]
+  vICP_PreviousHistory[0]=dataSeriesPrevSub
+  vHavePreviousUpTo[0]+=1
+  #print "History [0] has ["+str(len(vICP_PreviousHistory[0]))+"] elements. History vector has ["+str(len(vICP_PreviousHistory))+"] elements"
   myCreateDatFile(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate)
   #2
   myGnuPlotCmds.append('plot "'+myTargetFilename+'" u 1:2 lt rgb "red" title "'+vTopicName[5:9]+'"')
@@ -624,7 +646,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTranslateX=0.0
   myTranslateY=0.0
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_prev.dat'
-  myCreateDatFileSample(dataSeriesPrevSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesBackGround)
+  myCreateDatFileSample(vICP_PreviousHistory[vHistoryNumber-1],myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesBackGround)
   #4
   myGnuPlotCmds.append('"'+myTargetFilename+'" u 1:2 lt rgb "green" title "previous"')
   #ICP iterations, blue
@@ -633,8 +655,23 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTranslateY=0.0
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_iterations.dat'
   #myCreateDatFileICP(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
-  myICP_Centroid=myApplyICP(dataSeriesSub,dataSeriesPrevSub,5,myTargetFilename)
-	    
+  #print vHavePreviousUpTo[0]
+  if len(vICP_PreviousHistory)==vHistoryNumber and vHavePreviousUpTo[0]>=vHistoryNumber:
+    vHavePreviousUpTo[0]=0
+    #myICP_Centroid=myApplyICP(dataSeriesSub,dataSeriesPrevSub,5,myTargetFilename)
+    #print "Applying ICP"
+    myICP_Centroid=myApplyICP(dataSeriesSub,vICP_PreviousHistory[vHistoryNumber-1],vICPIterations,myTargetFilename)
+    myICPAvailable=True
+  else:
+    #Not on sequence
+    myICPAvailable=False
+    f = open(myTargetFilename, 'w')
+    f.close()
+    myICP_Centroid=[]
+    
+    myICP_Centroid.append(0)
+    myICP_Centroid.append(0)
+    myICP_Centroid.append(0)
 	    
   vICP_Pose[0]+=myICP_Centroid[0]
   vICP_Pose[1]+=myICP_Centroid[1]
@@ -659,6 +696,7 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit.dat'
   myLineFits=myCreateDatFileLineFit(dataSeriesSub,myTargetFilename,myTranslateX,myTranslateY,myRotate,dataSeriesPrevSub)
   myBoxAvailable=len(myLineFits)/4==2
+
   #print myBoxAvailable
   if myBoxAvailable:
     myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "magenta" linewidth 3 title "line fit" with line')
@@ -692,6 +730,11 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit_traj.dat'
     myCreateDatFileTrajectoryNoLineFits(myLineFitTrajFilename,myTargetFilename)
     myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line')
+  
+  qKalmanPose=[]
+  if myBoxAvailable==False:
+    myLineFitCenter=[]
+  myComputeKalman(True,myICPAvailable,myBoxAvailable,myCentroid,vICP_Pose,myLineFitCenter,vKalmanData,qKalmanPose)
   #if myDebug:
   #print "myICP_Consecutive has "+str(len(myGnuPlotCmds))+" elements"
   #ICP trajectory
