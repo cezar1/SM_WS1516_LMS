@@ -1,6 +1,7 @@
 import math
 import os
 import datetime
+from numpy import matrix
 myGnuPlotCmds=[]
 myDebug=False
 mySubtractThreshhold=0.3
@@ -15,7 +16,22 @@ myCustomRangeXStart=-1.5
 myCustomRangeXEnd=0
 myCustomRangeYStart=0
 myCustomRangeYEnd=1.5
+
+#myCustomRangeXStart=-3
+#myCustomRangeXEnd=3
+#myCustomRangeYStart=-3
+#myCustomRangeYEnd=3
+
 cPoseVectorLength=0.25
+
+myMatrixI3 = matrix( [[1,0,0],[0,1,0],[0,0,1]])
+myMatrixO3 = matrix( [[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]])
+cKD_POSE=0
+cKD_SIGMA=1
+cKD_P=2
+cKD_SIGMA_U=3
+cKD_SIGMA_ERROR=4
+cKD_PREDICTED_POSE=5
 
 def myOutput(vMessage):
   myGnuPlotCmds.append(vMessage)
@@ -627,21 +643,54 @@ def myCreateDatFileSample(dataSeriesRaw,vFileName,vTranslateX,vTranslateY,vRotat
       f.write(str(myX)+" "+str(myY)+"\n")
   f.close()
 def myComputeKalman(vCentroidAvailable,vICPAvailable,vBoxAvailable,vCentroid_Pose,vICP_Pose,vICP_Shift,vBOX_Pose,vKalmanData,qKalmanPose):
+#cKD_POSE=0
+#cKD_SIGMA=1
+#cKD_P=2
+#cKD_SIGMA_U=3
+#cKD_SIGMA_ERROR=4
+#cKD_PREDICTED_POSE=5
+  myCurrentPose= matrix([[qKalmanPose[0]],[qKalmanPose[1]],[qKalmanPose[2]]])
+  
+  mySigma=vKalmanData[cKD_SIGMA]
+  myP=vKalmanData[cKD_P]
+  mySigma_U=vKalmanData[cKD_SIGMA_U]
+  mySigma_Error=vKalmanData[cKD_SIGMA_ERROR]
+  myPredictedPose=vKalmanData[cKD_PREDICTED_POSE]
+  myMotionModel= matrix([[vICP_Shift[0]],[vICP_Shift[1]],[vICP_Shift[2]]])
+  print "Motion model: \n"+str(myMotionModel)
   if vICPAvailable:
     #Feed ICP result into kalman
-    qKalmanPose[0]+=vICP_Shift[0]
-    qKalmanPose[1]+=vICP_Shift[1]
-    qKalmanPose[2]+=vICP_Shift[2]
+    #Prediction with a priori estimate
+    myPredictedPose+=myMotionModel
+    print "Predicted pose: \n"+str(myMotionModel)
+    mySigma=myP+mySigma_U
+    #SigmaNext=CurrentP+SigmaU
   if vBoxAvailable:
+    myBoxPose= matrix([[vBOX_Pose[2]],[vBOX_Pose[3]],[vBOX_Pose[4]]])
+    print "Box pose: \n"+str(myBoxPose)
+    #Compute Kalman gain
+    K=mySigma*((mySigma+mySigma_Error).I)
+    print "K: \n"+str(K)
+    myP=(myMatrixI3-K)*mySigma
+    myCurrentPose=myPredictedPose+K*(myBoxPose-myPredictedPose)
+    myPredictedPose=myCurrentPose
+    print "Current pose: \n"+str(myCurrentPose)
     #Fix ICP pose to box
     vICP_Pose[0]=vBOX_Pose[2]
     vICP_Pose[1]=vBOX_Pose[3]
     vICP_Pose[2]=vBOX_Pose[4]
-    #Fix Kalman pose to box corner and orientation to box orientation
-    qKalmanPose[0]=vBOX_Pose[2]
-    qKalmanPose[1]=vBOX_Pose[3]
-    qKalmanPose[2]=vBOX_Pose[4]
+
+    qKalmanPose[0]=myCurrentPose[0,0]
+    qKalmanPose[1]=myCurrentPose[1,0]
+    qKalmanPose[2]=myCurrentPose[2,0]
+    print "qKalmanPose X["+str(qKalmanPose[0])+"] Y["+str(qKalmanPose[1])+"] Theta["+str(qKalmanPose[2])+"]"
     
+  vKalmanData[cKD_P]=myP
+  vKalmanData[cKD_SIGMA]=mySigma
+  vKalmanData[cKD_SIGMA_U]=mySigma_U
+  vKalmanData[cKD_SIGMA_ERROR]=mySigma_Error
+  vKalmanData[cKD_PREDICTED_POSE]=myPredictedPose
+  
 def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTopicPose,dataSeriesBackGround,vICP_Pose,vICP_Initialized,vICP_PreviousHistory,vHistoryNumber,vHavePreviousUpTo,vICPIterations,vKalmanData):
   
   #process history
@@ -672,7 +721,6 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
   dataSeriesSub=myFilterRange(dataSeriesSub1)
   dataSeriesPrevSub1=mySubtractBackground(dataSeriesPrevious,dataSeriesBackGround)
   dataSeriesPrevSub=myFilterRange(dataSeriesPrevSub1)
-  
   if len(vICP_PreviousHistory)==0:
     qKalmanPose=[]
     qKalmanPose.append(0)
@@ -682,7 +730,17 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     for i in range(0,vHistoryNumber):
       #print "Appending element ["+str(i+1)+"]"
       vICP_PreviousHistory.append([])
-    vKalmanData.append(qKalmanPose)
+    #cKD_POSE=0
+    #cKD_SIGMA=1
+    #cKD_P=2
+    #cKD_SIGMA_U=3
+    #cKD_SIGMA_ERROR=4
+    vKalmanData.append(qKalmanPose)		#KALMAN POSE
+    vKalmanData.append(myMatrixI3)		#KALMAN SIGMA
+    vKalmanData.append(myMatrixI3*0.5)		#KALMAN P
+    vKalmanData.append(myMatrixI3*0.01)		#KALMAN_SIGMA_U
+    vKalmanData.append(myMatrixI3*0.01)		#cKD_SIGMA_ERROR
+    vKalmanData.append(myMatrixO3)
   else:
     #print "Loading vKalmanData.. ["+str(len(vKalmanData[0]))+"] elements, ["+str(vKalmanData[0][0])+"] ["+str(vKalmanData[0][1])+"] ["+str(vKalmanData[0][2])+"]"
     qKalmanPose=vKalmanData[0]
@@ -791,14 +849,14 @@ def myICP_Consecutive(dataSeriesRaw,dataSeriesPrevious,vTopicName,vDateTime,vTop
     myLineFitTrajFilename='dat/output_'+vTopicName[5:9]+'_ICP_line_fit_traj.dat'
     myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit_traj.dat'
     myCreateDatFileTrajectoryLineFits(myLineFitTrajFilename,myTargetFilename,myLineFitCenter)
-    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line')
+    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "Box corner" with line')
   else:
     myGnuPlotCmds.append('')
     #for box center trajectory keep existing points
     myLineFitTrajFilename='dat/output_'+vTopicName[5:9]+'_ICP_line_fit_traj.dat'
     myTargetFilename='dat/output_'+vTopicName[1:]+'_ICP_line_fit_traj.dat'
     myCreateDatFileTrajectoryNoLineFits(myLineFitTrajFilename,myTargetFilename)
-    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "box center" with line')
+    myGnuPlotCmds.append('"'+myTargetFilename+'" lt rgb "green" linewidth 3 title "Box corner" with line')
   
   
   if myBoxAvailable==False:
